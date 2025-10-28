@@ -609,10 +609,9 @@ DYNAMODB_TABLE: schrute-phase1
 4. Extract email body (text and HTML)
 5. Determine thread ID (from In-Reply-To or Message-ID)
 6. Extract participants list
-7. Detect speech acts (invoke Speech Act Detector)
-8. Detect queries (check for query patterns)
-9. Invoke Query Handler if queries detected
-10. Orchestrate combined response
+7. Invoke Speech Act Detector (detects both speech acts and queries via LLM)
+8. Invoke Query Handler for any detected queries
+9. Orchestrate combined response
 
 **Email Processing Logic:**
 ```typescript
@@ -621,53 +620,37 @@ interface EmailProcessingResult {
   queryResponses: QueryResponse[];
 }
 
+interface SpeechActDetectionResult {
+  speechActs: SpeechActSummary;
+  queries: Query[];
+}
+
+interface Query {
+  queryText: string;
+  queryType?: string;
+}
+
 async function processEmail(email: ParsedEmail): Promise<EmailProcessingResult> {
   const results: EmailProcessingResult = {
     speechActs: null,
     queryResponses: []
   };
   
-  // ALWAYS check for speech acts (unless email is trivial/administrative)
+  // ALWAYS invoke Speech Act Detector for substantive content
+  // The LLM will detect BOTH speech acts AND queries in a single call
   if (hasSubstantiveContent(email)) {
-    results.speechActs = await invokeSpeechActDetector(email);
-  }
-  
-  // ALSO check for queries (can coexist with speech acts)
-  const queries = extractQueries(email);
-  if (queries.length > 0) {
-    results.queryResponses = await Promise.all(
-      queries.map(query => invokeQueryHandler(query, email))
-    );
-  }
-  
-  return results;
-}
-
-function extractQueries(email: ParsedEmail): string[] {
-  const queryPatterns = [
-    /what did .+ commit to/i,
-    /who (asked|requested)/i,
-    /when is .+ due/i,
-    /show me .+ (from|in)/i,
-    /list all/i,
-    /summarize/i,
-    /who'?s waiting on/i,
-    /what .+ (are |is )?(overdue|unanswered)/i
-  ];
-  
-  const queries: string[] = [];
-  const sentences = email.body.split(/[.!?]+/);
-  
-  for (const sentence of sentences) {
-    for (const pattern of queryPatterns) {
-      if (pattern.test(sentence)) {
-        queries.push(sentence.trim());
-        break;
-      }
+    const detectionResult = await invokeSpeechActDetector(email);
+    results.speechActs = detectionResult.speechActs;
+    
+    // If the LLM detected queries, process them
+    if (detectionResult.queries && detectionResult.queries.length > 0) {
+      results.queryResponses = await Promise.all(
+        detectionResult.queries.map(query => invokeQueryHandler(query, email))
+      );
     }
   }
   
-  return queries;
+  return results;
 }
 
 function hasSubstantiveContent(email: ParsedEmail): boolean {
@@ -691,13 +674,15 @@ function hasSubstantiveContent(email: ParsedEmail): boolean {
 3. Extract thread ID and participants
 4. Detect quoted content (for context assembly)
 5. Store EMAIL_MESSAGE entity in DynamoDB
-6. ALWAYS invoke Speech Act Detector (if substantive content)
+6. Invoke Speech Act Detector (if substantive content)
+   - LLM detects BOTH speech acts AND queries in single call
    - Pass full thread context (assembled via gap detection)
-7. ALSO extract and process queries (if any)
-   - Pass full thread context
-8. Wait for all responses
-9. Invoke Email Response Lambda with combined results
-10. Return success
+7. Store detected speech acts in DynamoDB
+8. For any detected queries, invoke Query Handler
+   - Pass query text and thread context
+9. Wait for all responses
+10. Invoke Email Response Lambda with combined results
+11. Return success
 ```
 
 **Example Multi-Purpose Email:**
@@ -743,17 +728,17 @@ MODEL: claude-3-5-haiku-20241022
 1. Receive email and thread context from Email Receiver
 2. Assemble full thread context (if not already provided)
 3. Call Claude API with context
-4. Detect all speech acts from current email
+4. Detect all speech acts AND queries from current email
 5. Store each speech act in DynamoDB
-6. Update thread metadata
-7. Return summary for acknowledgment
+6. Return summary with speech acts and detected queries
+7. Update thread metadata
 
 **Note:** See "Context Management for LLM Invocations" section for details on how thread context is assembled and provided to Claude API. The Lambda receives either a single email (containing quoted history) or multiple emails (to fill gaps).
 
 **Claude API Prompt Strategy:**
 
 ```javascript
-const systemPrompt = `You are a speech act detector for a coordination assistant. Your job is to identify and extract all speech acts from email content.
+const systemPrompt = `You are a speech act and query detector for a coordination assistant. Your job is to identify and extract all speech acts and queries from email content.
 
 Speech act types:
 1. REQUEST - Someone asking another person to do something
@@ -762,6 +747,15 @@ Speech act types:
 4. DECLARATION - Someone stating a decision or status change
 5. ASSERTION - Someone stating a fact or observation
 
+Query types (questions directed at the assistant about past communications):
+- Questions about commitments: "What did Bob commit to?"
+- Questions about requests: "Who asked for X?"
+- Questions about deadlines: "When is X due?"
+- Questions about status: "What's overdue?" "What's unanswered?"
+- Questions about relationships: "Who's waiting on Bob?"
+- Temporal queries: "Show me requests from last week"
+- Summary queries: "Summarize this week's decisions"
+
 For each speech act, extract:
 - Type
 - Actor (who is performing the speech act)
@@ -769,9 +763,13 @@ For each speech act, extract:
 - Content (the actual statement)
 - Deadline (if mentioned)
 
-Return a JSON array of speech acts. Be thorough - a single email may contain multiple speech acts.
+For each query, extract:
+- Query text (the actual question)
+- Query type (if identifiable)
 
-CRITICAL: Extract speech acts ONLY. Do not infer, summarize, or add commentary.`
+Return a JSON object with two arrays: "speechActs" and "queries". Be thorough - a single email may contain multiple speech acts AND queries.
+
+CRITICAL: Extract speech acts and queries ONLY. Do not infer, summarize, or add commentary.`
 
 const userPrompt = `Email from: ${email.from}
 Email to: ${email.to.join(', ')}
@@ -780,10 +778,10 @@ Subject: ${email.subject}
 Email body:
 ${email.body}
 
-Extract all speech acts from this email.`
+Extract all speech acts and queries from this email.`
 
 const response = await anthropic.messages.create({
-  model: 'claude-sonnet-4-20250514',
+  model: 'claude-3-5-haiku-20241022',
   max_tokens: 2000,
   system: systemPrompt,
   messages: [
@@ -794,23 +792,31 @@ const response = await anthropic.messages.create({
 
 **Expected Response Format:**
 ```json
-[
-  {
-    "type": "REQUEST",
-    "actor": "alice@example.com",
-    "target": "bob@example.com",
-    "content": "review the PR by Friday",
-    "deadline": "2025-10-31T23:59:59Z"
-  },
-  {
-    "type": "COMMITMENT",
-    "actor": "bob@example.com",
-    "target": "alice@example.com",
-    "content": "I'll get it done by Thursday",
-    "deadline": "2025-10-30T23:59:59Z",
-    "related_to": "previous request"
-  }
-]
+{
+  "speechActs": [
+    {
+      "type": "REQUEST",
+      "actor": "alice@example.com",
+      "target": "bob@example.com",
+      "content": "review the PR by Friday",
+      "deadline": "2025-10-31T23:59:59Z"
+    },
+    {
+      "type": "COMMITMENT",
+      "actor": "bob@example.com",
+      "target": "alice@example.com",
+      "content": "I'll get it done by Thursday",
+      "deadline": "2025-10-30T23:59:59Z",
+      "related_to": "previous request"
+    }
+  ],
+  "queries": [
+    {
+      "queryText": "What did Alice commit to last week?",
+      "queryType": "commitment_by_person"
+    }
+  ]
+}
 ```
 
 **Storage Flow:**
@@ -822,7 +828,9 @@ const response = await anthropic.messages.create({
    c. PutItem to DynamoDB
 3. Update EMAIL_THREAD entity (increment counts)
 4. Create/Update PARTICIPANT_INDEX entities
-5. Return summary: "Detected: 2 requests, 1 commitment"
+5. Return result with:
+   - Speech act summary: "Detected: 2 requests, 1 commitment"
+   - Detected queries: Array of query objects
 ```
 
 #### 3. Query Handler Lambda
@@ -965,77 +973,75 @@ SES_FROM_NAME: Dwight Schrute
 ```
 
 **Responsibilities:**
-1. Format email (headers, body)
-2. Combine speech act acknowledgment with query responses
-3. Add personality/signature
-4. Send via SES
+1. Receive combined results from Email Receiver (speech acts and/or query responses)
+2. Pass original email + results to Claude API for response generation
+3. LLM generates complete response email with appropriate greeting, content, and signature
+4. Send formatted email via SES
 5. Log sent email
 
-**Email Formatting:**
+**Response Generation with LLM:**
 
 ```javascript
-function formatCombinedEmail(email, speechActSummary, queryResponses) {
+async function generateEmailResponse(email, speechActSummary, queryResponses) {
   const isFirstContact = !email.inReplyTo
-  const signature = isFirstContact ? 'Dwight Schrute' : 'Dwight'
   
-  let body = `Hi ${extractFirstName(email.from)},\n\n`
+  const systemPrompt = `You are Dwight Schrute, a coordination assistant. Generate a complete response email.
+
+Guidelines:
+- Determine the sender's preferred name from how they sign their emails or context
+- Use that name in your greeting (e.g., "Hi Bob," not "Hi robert.johnson@example.com,")
+- If uncertain, use a friendly generic greeting like "Hi there,"
+- Acknowledge detected speech acts naturally if provided
+- Include query answers if provided, with any privacy warnings
+- Sign off as "Dwight Schrute" for first contact in a thread, "Dwight" for follow-ups
+- Be concise, friendly, professional, and helpful
+- Format lists clearly with bullet points or numbering where appropriate`
+
+  const userPrompt = `Original email:
+From: ${email.from}
+Subject: ${email.subject}
+Body:
+${email.body}
+
+${speechActSummary && speechActSummary.length > 0 ? `
+Speech acts I detected:
+${JSON.stringify(speechActSummary, null, 2)}
+
+Please acknowledge these naturally in your response.` : ''}
+
+${queryResponses && queryResponses.length > 0 ? `
+Query responses to include:
+${JSON.stringify(queryResponses, null, 2)}
+
+Include any privacy warnings verbatim.` : ''}
+
+First contact in thread: ${isFirstContact}
+
+Generate a complete response email body (greeting through signature).`
+
+  const response = await anthropic.messages.create({
+    model: 'claude-3-5-haiku-20241022',
+    max_tokens: 1500,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userPrompt }]
+  })
   
-  // Add speech act acknowledgment if any detected
-  if (speechActSummary && speechActSummary.length > 0) {
-    body += `Got it! Here's what I understood from your email:\n\n`
-    body += `📋 Detected:\n`
-    body += formatSpeechActList(speechActSummary)
-    body += `\n`
-  }
-  
-  // Add query responses if any
-  if (queryResponses && queryResponses.length > 0) {
-    if (speechActSummary && speechActSummary.length > 0) {
-      body += `\n---\n\n`
-      body += `Regarding your question${queryResponses.length > 1 ? 's' : ''}:\n\n`
+  return response.content[0].text
+}
+
+async function sendResponseEmail(email, responseBody) {
+  const params = {
+    Source: 'Dwight Schrute <dwight@schrute.work>',
+    Destination: { ToAddresses: [email.from] },
+    Message: {
+      Subject: { Data: `Re: ${email.subject}` },
+      Body: { Text: { Data: responseBody } }
     }
-    
-    queryResponses.forEach((response, idx) => {
-      if (queryResponses.length > 1) {
-        body += `**Question ${idx + 1}:**\n`
-      }
-      body += response.answer + '\n'
-      if (response.privacyWarning) {
-        body += `\n${response.privacyWarning}\n`
-      }
-      if (idx < queryResponses.length - 1) {
-        body += `\n`
-      }
-    })
   }
   
-  // Add closing
-  if (speechActSummary && speechActSummary.length > 0 && (!queryResponses || queryResponses.length === 0)) {
-    body += `\nI'm tracking these in my memory. Let me know if I misunderstood anything!\n`
-  }
+  await ses.sendEmail(params).promise()
   
-  body += `\n${signature}`
-  
-  return {
-    to: email.from,
-    subject: `Re: ${email.subject}`,
-    body,
-    inReplyTo: email.messageId,
-    references: email.references
-  }
-}
-
-// Legacy functions for backward compatibility (single-purpose emails)
-function formatAcknowledgmentEmail(email, speechActSummary) {
-  return formatCombinedEmail(email, speechActSummary, null)
-}
-
-function formatQueryResponseEmail(email, queryResponse, privacyWarning) {
-  const queryResponses = [{
-    answer: queryResponse,
-    privacyWarning: privacyWarning
-  }]
-  return formatCombinedEmail(email, null, queryResponses)
+  console.log(`Email sent to ${email.from}`)
 }
 ```
 
@@ -1067,6 +1073,16 @@ Alice committed to:
 Dwight
 ```
 
+**Note on Name Personalization:**
+
+Rather than attempting to extract names from email addresses programmatically, the Email Response Lambda should pass the full email context to an LLM for response generation. The LLM can:
+- Detect how the sender signs their emails ("Thanks, Bob" vs "Robert Johnson")
+- Understand nicknames and preferred names from context
+- Handle cultural differences in name ordering
+- Choose appropriate formality level
+
+This approach is more robust than pattern matching and leverages the LLM's natural language understanding.
+
 ---
 
 ## Context Management for LLM Invocations
@@ -1088,65 +1104,104 @@ Dwight
 
 ### Context Assembly Algorithm
 
+**Key Design Decision:** For LLM invocations (speech act detection, query handling, response generation), provide **all emails involving the current participants**, not just emails in the current thread. This ensures:
+- Name preferences established in introductory emails are remembered
+- Relationship dynamics are understood across conversations
+- Historical context informs current interactions
+
+**Thread vs Participant Context:**
+- **Speech act storage**: Stored with threadId (for organization)
+- **LLM context**: Uses ALL participant emails (for understanding)
+
 ```javascript
-async function assembleThreadContext(currentEmail, threadId, participants) {
+async function assembleParticipantContext(currentEmail, participants) {
   const context = {
-    emails: [],
-    quotedMessageIds: new Set(),
-    missingEmails: []
+    currentThreadEmails: [],
+    historicalEmails: [],
+    allEmails: []
   }
   
-  // Step 1: Parse current email for quoted content
-  const quotedMessages = extractQuotedMessages(currentEmail.body)
-  quotedMessages.forEach(msg => {
-    if (msg.messageId) {
-      context.quotedMessageIds.add(msg.messageId)
-    }
-  })
+  // Step 1: Get ALL threads involving these participants (privacy-filtered)
+  const visibleThreads = await getThreadsWithParticipants(participants)
   
-  // Step 2: Get thread metadata from DynamoDB
-  const thread = await getThread(threadId)
-  if (!thread) {
-    // First email in thread, no context needed
-    return { emails: [currentEmail] }
-  }
+  // Step 2: Get current thread emails (for gap detection)
+  const threadId = currentEmail.threadId
+  const currentThreadMessages = await getThreadMessages(threadId, participants)
+  context.currentThreadEmails = currentThreadMessages
   
-  // Step 3: Get all messages in thread (privacy filtered)
-  const threadMessages = await getThreadMessages(threadId, participants)
+  // Step 3: Get historical emails from other threads
+  // Limit to recent history (last 30 days or 50 emails, whichever is less)
+  const historicalMessages = await getHistoricalMessages(
+    visibleThreads.filter(t => t !== threadId),
+    participants,
+    { maxEmails: 50, maxDays: 30 }
+  )
+  context.historicalEmails = historicalMessages
   
-  // Step 4: Identify gaps (messages not quoted in current email)
-  const gaps = threadMessages.filter(msg => 
-    !context.quotedMessageIds.has(msg.messageId) &&
+  // Step 4: Detect gaps in current thread
+  const quotedMessageIds = extractQuotedMessages(currentEmail.body)
+    .map(msg => msg.messageId)
+    .filter(id => id)
+  
+  const currentThreadGaps = currentThreadMessages.filter(msg =>
+    !quotedMessageIds.includes(msg.messageId) &&
     msg.messageId !== currentEmail.messageId
   )
   
-  // Step 5: Retrieve gap messages from S3
-  if (gaps.length > 0) {
-    const gapEmails = await Promise.all(
-      gaps.map(msg => retrieveEmailFromS3(msg.s3Key))
-    )
-    context.missingEmails = gapEmails
-  }
-  
-  // Step 6: Construct full context
-  if (context.missingEmails.length > 0) {
-    // Current email doesn't include full history
-    // Provide: [previous emails] + [current email]
-    context.emails = [
-      ...context.missingEmails.sort((a, b) => 
-        new Date(a.timestamp) - new Date(b.timestamp)
-      ),
-      currentEmail
-    ]
-  } else {
-    // Current email includes full quoted history
-    // Just provide current email (which contains quotes)
-    context.emails = [currentEmail]
-  }
+  // Step 5: Assemble context prioritizing recent/current thread
+  // For LLM: [historical context] + [current thread with gaps filled] + [current email]
+  context.allEmails = [
+    ...context.historicalEmails.slice(-10), // Last 10 historical emails
+    ...currentThreadGaps,
+    currentEmail
+  ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
   
   return context
 }
+
+async function getThreadsWithParticipants(participants) {
+  // Find intersection of threads where ALL participants were present
+  const participantThreads = await Promise.all(
+    participants.map(p => getThreadsForParticipant(p))
+  )
+  
+  const intersection = participantThreads.reduce((acc, threads) => {
+    return acc.filter(t => threads.includes(t))
+  })
+  
+  return intersection
+}
+
+async function getHistoricalMessages(threadIds, participants, options) {
+  const { maxEmails, maxDays } = options
+  const cutoffDate = new Date()
+  cutoffDate.setDate(cutoffDate.getDate() - maxDays)
+  
+  const allMessages = []
+  
+  for (const threadId of threadIds) {
+    const messages = await getThreadMessages(threadId, participants)
+    allMessages.push(...messages.filter(msg => 
+      new Date(msg.Timestamp) >= cutoffDate
+    ))
+  }
+  
+  // Sort by timestamp and limit
+  return allMessages
+    .sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp))
+    .slice(0, maxEmails)
+}
 ```
+
+**Context Size Management:**
+
+For Phase 1, use conservative limits to manage token costs:
+- **Historical context**: Last 10 emails from other threads (≈5K tokens)
+- **Current thread**: Full thread with gap filling (≈10K tokens)
+- **Current email**: Always included (≈2K tokens)
+- **Total**: ≈17K tokens input per LLM call (well under Haiku's 200K limit)
+
+For Phase 2+, could implement smarter summarization for very long histories.
 
 ### Quoted Message Detection
 
@@ -1637,7 +1692,7 @@ async function executePrivateQuery(queryParams, queryParticipants) {
       results: [],
       privacyWarning: {
         filtered: true,
-        message: "⚠️ Note: No results visible to all participants on this email. There may be results in other threads."
+        message: "âš ï¸ Note: No results visible to all participants on this email. There may be results in other threads."
       }
     }
   }
