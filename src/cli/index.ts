@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import 'dotenv/config'
 import { createInterface } from 'readline'
 import { resolve } from 'path'
 import { loadEmailsFromYaml, buildThreads } from '~/lib/email/index.js'
