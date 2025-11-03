@@ -1,0 +1,67 @@
+emails:
+  - message_id: msg-101
+    thread_id: thread-meeting
+    from:
+      email: carol@company.com
+      name: Carol Martinez
+    to:
+      - email: alice@company.com
+        name: Alice Johnson
+      - email: bob@company.com
+        name: Bob Smith
+      - email: schrute@company.com
+        name: Schrute
+    subject: Team Sync - This Week?
+    body: |
+      Hey team,
+
+      We need to sync up on the Q1 roadmap. Can we schedule a meeting for this week?
+
+      What days work for everyone? I'm free Tuesday and Thursday afternoons.
+
+      Schrute, please help coordinate a time that works for everyone.
+
+      Carol
+    timestamp: '2024-01-20T08:00:00Z'
+
+  - message_id: msg-102
+    thread_id: thread-meeting
+    from:
+      email: alice@company.com
+      name: Alice Johnson
+    to:
+      - email: carol@company.com
+        name: Carol Martinez
+      - email: bob@company.com
+        name: Bob Smith
+      - email: schrute@company.com
+        name: Schrute
+    subject: 'Re: Team Sync - This Week?'
+    body: |
+      I can do Thursday at 2pm. Tuesday doesn't work for me.
+
+      Alice
+    timestamp: '2024-01-20T09:15:00Z'
+    in_reply_to: msg-101
+
+  - message_id: msg-103
+    thread_id: thread-meeting
+    from:
+      email: bob@company.com
+      name: Bob Smith
+    to:
+      - email: carol@company.com
+        name: Carol Martinez
+      - email: alice@company.com
+        name: Alice Johnson
+      - email: schrute@company.com
+        name: Schrute
+    subject: 'Re: Team Sync - This Week?'
+    body: |
+      Thursday 2pm works for me too.
+
+      Schrute, can you send out a calendar invite?
+
+      Bob
+    timestamp: '2024-01-20T10:00:00Z'
+    in_reply_to: msg-102

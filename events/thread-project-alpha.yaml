@@ -1,0 +1,95 @@
+emails:
+  - message_id: msg-001
+    thread_id: thread-project-alpha
+    from:
+      email: alice@company.com
+      name: Alice Johnson
+    to:
+      - email: bob@company.com
+        name: Bob Smith
+      - email: schrute@company.com
+        name: Schrute
+    subject: Project Alpha - Initial Planning
+    body: |
+      Hi Bob and Schrute,
+
+      I'd like to kick off Project Alpha. The goal is to implement a new customer dashboard by end of Q2.
+
+      Can you both review the requirements doc I shared last week and let me know if you have any concerns?
+
+      Schrute, I'll need you to track all decisions and action items for this project.
+
+      Thanks!
+      Alice
+    timestamp: '2024-01-15T09:00:00Z'
+
+  - message_id: msg-002
+    thread_id: thread-project-alpha
+    from:
+      email: bob@company.com
+      name: Bob Smith
+    to:
+      - email: alice@company.com
+        name: Alice Johnson
+      - email: schrute@company.com
+        name: Schrute
+    subject: 'Re: Project Alpha - Initial Planning'
+    body: |
+      Hi Alice,
+
+      I reviewed the requirements. Overall looks good, but I have concerns about the timeline.
+
+      The authentication integration alone will take 3-4 weeks. Can we push the deadline to mid-Q2?
+
+      Also, are we using React or Vue for the frontend? That wasn't clear in the doc.
+
+      Bob
+    timestamp: '2024-01-15T14:30:00Z'
+    in_reply_to: msg-001
+
+  - message_id: msg-003
+    thread_id: thread-project-alpha
+    from:
+      email: alice@company.com
+      name: Alice Johnson
+    to:
+      - email: bob@company.com
+        name: Bob Smith
+      - email: schrute@company.com
+        name: Schrute
+    subject: 'Re: Project Alpha - Initial Planning'
+    body: |
+      Bob,
+
+      Good point on the timeline. Let's target May 15th instead of June 30th. That gives us more buffer.
+
+      We've decided to go with React for this project. It's what the team knows best.
+
+      I'll commit to getting you the final API specs by end of this week.
+
+      Alice
+    timestamp: '2024-01-15T16:00:00Z'
+    in_reply_to: msg-002
+
+  - message_id: msg-004
+    thread_id: thread-project-alpha
+    from:
+      email: bob@company.com
+      name: Bob Smith
+    to:
+      - email: alice@company.com
+        name: Alice Johnson
+      - email: schrute@company.com
+        name: Schrute
+    subject: 'Re: Project Alpha - Initial Planning'
+    body: |
+      Perfect! May 15th works for me.
+
+      I'll start on the authentication module this week and will have a prototype ready by Jan 30th.
+
+      Schrute, can you send me a summary of all the key decisions we've made so far?
+
+      Thanks,
+      Bob
+    timestamp: '2024-01-16T10:00:00Z'
+    in_reply_to: msg-003

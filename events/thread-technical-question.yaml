@@ -1,0 +1,44 @@
+emails:
+  - message_id: msg-201
+    thread_id: thread-technical
+    from:
+      email: dave@company.com
+      name: Dave Wilson
+    to:
+      - email: schrute@company.com
+        name: Schrute
+    cc:
+      - email: bob@company.com
+        name: Bob Smith
+    subject: Question about API authentication
+    body: |
+      Schrute,
+
+      I'm working on integrating with the customer API and I'm not sure which authentication method we decided to use.
+
+      Was it OAuth2 or API keys? Can you check the project docs?
+
+      Dave
+    timestamp: '2024-01-22T11:00:00Z'
+
+  - message_id: msg-202
+    thread_id: thread-technical
+    from:
+      email: bob@company.com
+      name: Bob Smith
+    to:
+      - email: dave@company.com
+        name: Dave Wilson
+      - email: schrute@company.com
+        name: Schrute
+    subject: 'Re: Question about API authentication'
+    body: |
+      Dave,
+
+      We're using OAuth2 for the customer API. I set up the client credentials last month.
+
+      The config is in the engineering wiki under "API Integration Guide".
+
+      Bob
+    timestamp: '2024-01-22T11:30:00Z'
+    in_reply_to: msg-201
