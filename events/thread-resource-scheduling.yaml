@@ -1,0 +1,116 @@
+- message_id: msg-res-001
+  thread_id: thread-resource-scheduling
+  from:
+    email: alice@company.com
+    name: Alice Johnson
+  to:
+    - email: bob@company.com
+      name: Bob Smith
+    - email: carol@company.com
+      name: Carol Davis
+  cc: []
+  subject: Planning Team Meeting Next Week
+  body: |
+    Hi team,
+
+    We need to schedule our quarterly planning meeting for next week.
+    We'll need a room that can fit at least 8 people.
+
+    Can someone check what conference rooms are available on Tuesday afternoon?
+
+    Thanks!
+    Alice
+  timestamp: '2025-01-18T09:00:00Z'
+  in_reply_to: undefined
+
+- message_id: msg-res-002
+  thread_id: thread-resource-scheduling
+  from:
+    email: bob@company.com
+    name: Bob Smith
+  to:
+    - email: alice@company.com
+      name: Alice Johnson
+    - email: carol@company.com
+      name: Carol Davis
+  cc: []
+  subject: Re: Planning Team Meeting Next Week
+  body: |
+    Hi Alice,
+
+    Good question. I think Conference Room A should work - it has capacity for 10.
+    Let me check if it's available Tuesday Jan 20th from 2-4pm.
+
+    Also, should we book the 4K projector for presentations?
+
+    Bob
+  timestamp: '2025-01-18T10:30:00Z'
+  in_reply_to: msg-res-001
+
+- message_id: msg-res-003
+  thread_id: thread-resource-scheduling
+  from:
+    email: carol@company.com
+    name: Carol Davis
+  to:
+    - email: alice@company.com
+      name: Alice Johnson
+    - email: bob@company.com
+      name: Bob Smith
+  cc: []
+  subject: Re: Planning Team Meeting Next Week
+  body: |
+    Adding to Bob's point - I remember Conference Room A being booked a lot.
+
+    Can someone check Conference Room B availability as a backup?
+    I think it fits 6 people which might be tight but could work.
+
+    Carol
+  timestamp: '2025-01-18T11:15:00Z'
+  in_reply_to: msg-res-002
+
+- message_id: msg-res-004
+  thread_id: thread-resource-scheduling
+  from:
+    email: alice@company.com
+    name: Alice Johnson
+  to:
+    - email: bob@company.com
+      name: Bob Smith
+    - email: carol@company.com
+      name: Carol Davis
+  cc: []
+  subject: Re: Planning Team Meeting Next Week
+  body: |
+    Great thinking on the backup room, Carol.
+
+    Bob - yes, let's book the 4K projector if we can.
+    The presentation will have lots of charts.
+
+    Once we confirm the room, I'll book it for Tuesday 2-4pm.
+
+    Alice
+  timestamp: '2025-01-18T13:00:00Z'
+  in_reply_to: msg-res-003
+
+- message_id: msg-res-005
+  thread_id: thread-resource-scheduling
+  from:
+    email: bob@company.com
+    name: Bob Smith
+  to:
+    - email: alice@company.com
+      name: Alice Johnson
+    - email: carol@company.com
+      name: Carol Davis
+  cc: []
+  subject: Re: Planning Team Meeting Next Week
+  body: |
+    Actually, thinking about it - we might have 9-10 people if the whole team joins.
+
+    Can someone double-check what rooms can fit 10 people and see what's available?
+    I don't want to manually check each room's capacity and booking calendar.
+
+    Bob
+  timestamp: '2025-01-18T14:30:00Z'
+  in_reply_to: msg-res-004
