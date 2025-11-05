@@ -136,14 +136,15 @@ Build a complete-but-basic prototype of all core features using an interactive C
 7. ✅ Query system (basic - no knowledge store yet)
 8. ✅ Personality system and sample configs
 9. ✅ Activation logic
-10. ⏳ Memory system (hybrid approach) - **TODO**
-11. ⏳ MCP client setup - **TODO**
-12. ⏳ Knowledge Store MCP server - **TODO**
-13. ⏳ Dynamic Skills MCP server - **TODO**
-14. ⏳ Mock skill MCP servers (1-2) - **TODO**
-15. ⏳ Wire everything together in CLI - **TODO**
-16. ⏳ Documentation updates (CLAUDE.md, README.md, ARCHITECTURE.md) - **TODO**
-17. ⏳ Polish and testing with various scenarios - **TODO**
+10. ✅ Memory system (hybrid approach)
+11. ✅ MCP client setup
+12. ✅ Knowledge Store MCP server
+13. ✅ Dynamic Skills MCP server
+14. ✅ Mock skill MCP servers (1-2)
+15. ✅ Wire everything together in CLI
+16. ✅ Documentation updates (CLAUDE.md, README.md, ARCHITECTURE.md)
+17. ✅ Unit testing with Jest
+18. ⏳ Integration testing with sample scenarios - **TODO**
 
 ## Key Technical Decisions
 
