@@ -144,7 +144,7 @@ Build a complete-but-basic prototype of all core features using an interactive C
 15. ✅ Wire everything together in CLI
 16. ✅ Documentation updates (CLAUDE.md, README.md, ARCHITECTURE.md)
 17. ✅ Unit testing with Jest
-18. ⏳ Integration testing with sample scenarios - **TODO**
+18. ✅ Integration testing with sample scenarios
 
 ## Key Technical Decisions
 

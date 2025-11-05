@@ -142,6 +142,24 @@
 - [x] .eslintrc.json
 - [x] tsconfig.json with strict mode
 
+### Testing (100%)
+- [x] **Jest test suite** with TypeScript + ESM support
+- [x] **Unit tests** (37 tests):
+  - Email parser and threading (4 tests)
+  - Speech act store operations (9 tests)
+  - Privacy tracker functionality (8 tests)
+  - Personality loader (5 tests)
+  - MCP type validation (11 tests)
+- [x] **Integration tests** (6 tests):
+  - All 4 sample email scenarios
+  - Privacy filtering scenarios
+  - Speech act detection workflow
+- [x] **Test infrastructure**:
+  - jest.config.js with ESM + TypeScript
+  - Module name mapping for ~ alias
+  - Coverage collection configured
+  - All 43 tests passing
+
 ### Documentation (100%)
 - [x] **CLAUDE.md** - Comprehensive development guide
   - Phase 1 architecture overview
@@ -230,10 +248,11 @@ See **README.md** for complete usage guide.
 - ✅ Clean, maintainable codebase
 
 ### Feature Completeness
-- ✅ All 17 steps from PLAN.md completed
+- ✅ All 18 steps from PLAN.md completed
 - ✅ All planned components implemented
 - ✅ All integration points working
 - ✅ All documentation written
+- ✅ All tests passing
 
 ### Code Quality
 - ✅ No TypeScript errors
@@ -248,13 +267,15 @@ See **README.md** for complete usage guide.
 
 - **Lines of Code**: ~7,500 (excluding node_modules)
 - **TypeScript Files**: 45+
+- **Test Files**: 6 (37 unit tests + 6 integration tests)
+- **Test Coverage**: 43 tests passing (100% pass rate)
 - **MCP Servers**: 4 (knowledge-store, dynamic-skills, 2 mocks)
 - **CLI Commands**: 17+
 - **Personalities**: 4
 - **Speech Act Types**: 10
 - **Sample Email Threads**: 4
 - **Documentation Pages**: 5 (CLAUDE.md, README.md, ARCHITECTURE.md, PLAN.md, STATUS.md)
-- **Total Commits**: 15+ (on this branch)
+- **Total Commits**: 17+ (on this branch)
 
 ---
 
@@ -263,10 +284,10 @@ See **README.md** for complete usage guide.
 Phase 1 is complete. Potential Phase 2 enhancements:
 
 ### Short Term
-- Test suite with Jest
 - Error recovery for MCP connections
 - Streaming responses for long queries
 - Additional personalities
+- Enhanced test coverage
 
 ### Medium Term
 - AWS Lambda deployment
@@ -286,7 +307,7 @@ Phase 1 is complete. Potential Phase 2 enhancements:
 ## 🏆 Success Criteria Met
 
 ✅ **Functional**: All core features working
-✅ **Tested**: Manually tested with sample scenarios
+✅ **Tested**: 43 automated tests passing (37 unit + 6 integration)
 ✅ **Documented**: Comprehensive documentation complete
 ✅ **Extensible**: MCP allows runtime capability addition
 ✅ **Privacy-Aware**: Conservative information sharing
