@@ -75,6 +75,14 @@ The core infrastructure is built and working. You can load emails, detect speech
 - [x] Thread context awareness
 - [x] Conservative approach (respond when unsure)
 
+### Memory System (`src/lib/memory/`) ✅ NEW
+- [x] Hybrid memory manager (recent full + older summarized)
+- [x] Email summarizer using Claude API
+- [x] Context builder for queries
+- [x] Memory formatting for prompts
+- [x] Configurable recent/summary thresholds
+- [x] Cache management
+
 ### CLI Tool (`src/cli/`)
 - [x] Interactive command loop
 - [x] Commands:
@@ -84,11 +92,13 @@ The core infrastructure is built and working. You can load emails, detect speech
   - `threads` - Show threads
   - `personality <name>` - Switch personality
   - `personalities` - List available
+  - `memory [on|off]` - Toggle hybrid memory ✅ NEW
   - `status` - Show current state
   - `help` - Show help
   - `exit` - Exit
 - [x] Activation checking on load
 - [x] Status reporting
+- [x] Memory system integration
 
 ### Sample Data
 - [x] 4 mock email threads:
@@ -107,13 +117,14 @@ The core infrastructure is built and working. You can load emails, detect speech
 
 ## ⏳ TODO (Not Yet Implemented)
 
-### Memory System (`src/lib/memory/`)
-- [ ] Hybrid memory implementation
-- [ ] Recent messages (full text)
-- [ ] Older messages (summaries)
-- [ ] Summary generator using Claude
-- [ ] Context builder for queries
-- [ ] Retrieval logic (keyword + recency)
+### Memory System (`src/lib/memory/`) ✅ COMPLETED
+- [x] Hybrid memory implementation
+- [x] Recent messages (full text)
+- [x] Older messages (summaries)
+- [x] Summary generator using Claude
+- [x] Context builder for queries
+- [x] Retrieval logic (keyword + recency)
+- [x] CLI integration with `memory` command
 
 ### MCP Integration (`src/lib/mcp/`)
 - [ ] MCP client setup
@@ -200,10 +211,10 @@ schrute> query What is the budget for raises?
 
 ## 📊 Completion Metrics
 
-- **Overall Progress**: ~60% complete
+- **Overall Progress**: ~65% complete
 - **Core Features**: 100% (all working)
+- **Memory System**: 100% (✅ completed)
 - **MCP System**: 0% (not started)
-- **Memory System**: 0% (not started)
 - **Documentation**: 10% (PLAN.md and STATUS.md only)
 
 ---
@@ -214,13 +225,12 @@ schrute> query What is the budget for raises?
    - Still works but warnings appear
    - Recommend upgrading Node
 
-2. **No memory system**: All emails are kept in full context for queries
-   - Works for small datasets
-   - Will hit token limits with large email threads
-   - Need to implement hybrid memory system
-
-3. **No knowledge persistence**: Knowledge mentioned in plan but not yet stored anywhere
+2. **No knowledge persistence**: Knowledge mentioned in plan but not yet stored anywhere
    - Need Knowledge Store MCP server
+
+3. **TypeScript config fixed**: Updated `tsconfig.json` to remove overly restrictive `lib` setting
+   - Build now compiles successfully
+   - Fixed `moduleResolution` to work with Node.js modules
 
 ---
 
@@ -228,10 +238,10 @@ schrute> query What is the budget for raises?
 
 To complete Phase 1, implement in this order:
 
-1. **Memory System** (2-4 hours)
-   - Implement hybrid memory with summaries
-   - Add to query context builder
-   - Test with long email threads
+1. ~~**Memory System**~~ ✅ COMPLETED
+   - ~~Implement hybrid memory with summaries~~
+   - ~~Add to query context builder~~
+   - ~~Test with long email threads~~
 
 2. **MCP Client** (1-2 hours)
    - Set up MCP SDK client
@@ -255,7 +265,7 @@ To complete Phase 1, implement in this order:
    - Usage examples
    - Architecture diagrams
 
-**Total estimated time to completion**: 11-17 hours
+**Total estimated time to completion**: 9-15 hours (Memory System complete!)
 
 ---
 
