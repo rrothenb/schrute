@@ -1,0 +1,413 @@
+- message_id: msg-messy-001
+  thread_id: thread-budget-mess
+  from:
+    email: alice.johnson@company.com
+    name: Alice Johnson
+  to:
+    - email: bob.smith@company.com
+      name: Bob Smith
+    - email: david.chen@company.com
+      name: David Chen
+  cc:
+    - email: schrute@company.com
+      name: Schrute
+  subject: Q2 Budget for Project Phoenix
+  body: |
+    Hey team,
+
+    We need to finalize the Q2 budget for Phoenix by end of week.
+    Bob, can you send over the infrastructure estimates?
+
+    David - did you finish the vendor analysis we talked about last month?
+
+    Thanks,
+    Alice
+  timestamp: '2025-01-20T09:15:00Z'
+  in_reply_to: undefined
+
+- message_id: msg-messy-002
+  thread_id: thread-budget-mess
+  from:
+    email: bob.smith@company.com
+    name: Bob Smith
+  to:
+    - email: alice.johnson@company.com
+      name: Alice Johnson
+  cc:
+    - email: david.chen@company.com
+      name: David Chen
+    - email: schrute@company.com
+      name: Schrute
+  subject: Re: Q2 Budget for Project Phoenix
+  body: |
+    Al,
+
+    Yep working on it. Should have estimates by Wed. How was your weekend btw?
+
+    One thing - Carol mentioned we should consider the cloud migration costs too.
+    Are we including that in Phoenix or separate?
+
+    Also I think Johnson is right that we're being too conservative on the timeline.
+    We could probably shave 2 weeks off if we parallelize the testing phase.
+
+    Bobby
+  timestamp: '2025-01-20T11:30:00Z'
+  in_reply_to: msg-messy-001
+
+- message_id: msg-messy-003
+  thread_id: thread-budget-mess
+  from:
+    email: david.chen@company.com
+    name: David Chen
+  to:
+    - email: bob.smith@company.com
+      name: Bob Smith
+    - email: alice.johnson@company.com
+      name: Alice Johnson
+  cc:
+    - email: schrute@company.com
+      name: Schrute
+  subject: Re: Q2 Budget for Project Phoenix
+  body: |
+    > David - did you finish the vendor analysis we talked about last month?
+
+    Yes, sent it to you and Mike last Thursday. Did you not get it?
+
+    TL;DR: VendorX is 40% cheaper but their SLA is sketchy. VendorY costs more
+    but way more reliable. My recommendation is VendorY if budget allows.
+
+    @Bobby - cloud migration should definitely be separate IMO. That's a
+    different bucket and Sarah's team is handling that anyway.
+
+    Dave
+  timestamp: '2025-01-20T13:45:00Z'
+  in_reply_to: msg-messy-002
+
+- message_id: msg-messy-004
+  thread_id: thread-budget-mess
+  from:
+    email: alice.johnson@company.com
+    name: Alice Johnson
+  to:
+    - email: david.chen@company.com
+      name: David Chen
+    - email: bob.smith@company.com
+      name: Bob Smith
+  cc:
+    - email: schrute@company.com
+      name: Schrute
+    - email: frank.wilson@company.com
+      name: Frank Wilson
+  subject: Re: Q2 Budget for Project Phoenix
+  body: |
+    Dave - I didn't get it! Can you resend? Maybe it went to my spam?
+
+    Bobby good point on the timeline. Let me check with Frank about parallelizing.
+    Frank - can your QA team handle parallel testing with dev? We're trying to
+    compress the schedule.
+
+    Re: vendors - VendorY sounds good but we need to see if theres budget.
+    What's the diff in actual $$$?
+
+    Weekend was great btw! Took the kids to the zoo 🦁
+
+    -A
+  timestamp: '2025-01-20T15:20:00Z'
+  in_reply_to: msg-messy-003
+
+- message_id: msg-messy-005
+  thread_id: thread-budget-mess
+  from:
+    email: frank.wilson@company.com
+    name: Frank Wilson
+  to:
+    - email: alice.johnson@company.com
+      name: Alice Johnson
+  cc:
+    - email: bob.smith@company.com
+      name: Bob Smith
+    - email: david.chen@company.com
+      name: David Chen
+    - email: schrute@company.com
+      name: Schrute
+  subject: Re: Q2 Budget for Project Phoenix
+  body: |
+    Alice,
+
+    Yeah we can do parallel testing but we'll need 2 more QA engineers.
+    Lisa and Tom are already maxed out on the legacy system work.
+
+    Did Elena approve the headcount increase? I thought she was being
+    pretty firm about no new hires til Q3.
+
+    Also just FYI there's some confusion about who owns the integration
+    testing - Bob's team or mine? Like we discussed back in November,
+    I thought we agreed it was a shared responsibility but Bob seems to
+    think it's all us.
+
+    Frank
+  timestamp: '2025-01-20T16:10:00Z'
+  in_reply_to: msg-messy-004
+
+- message_id: msg-messy-006
+  thread_id: thread-budget-mess
+  from:
+    email: bob.smith@company.com
+    name: Bob Smith
+  to:
+    - email: frank.wilson@company.com
+      name: Frank Wilson
+    - email: alice.johnson@company.com
+      name: Alice Johnson
+  cc:
+    - email: david.chen@company.com
+      name: David Chen
+    - email: schrute@company.com
+      name: Schrute
+  subject: Re: Q2 Budget for Project Phoenix
+  body: |
+    Frank - not trying to dump it all on you! I thought we agreed my team
+    does unit + integration, your team does E2E + UAT?
+
+    Maybe I misunderstood what Chen was saying in that meeting. Can Schrute
+    pull up what we decided?
+
+    Also here are the infrastructure estimates:
+    - Dev environment: $12K
+    - Staging: $8K
+    - Prod: $25K
+    - Monitoring tools: $5K
+    - Total: $50K
+
+    This assumes we go with AWS, not Azure. If we do Azure add 15%.
+
+    Oh and Alice I saw Jennifer this morning and she said the Phoenix
+    deadline might get moved up to end of March?? Is that confirmed?
+    That would change everything...
+
+    -Bob
+  timestamp: '2025-01-20T17:45:00Z'
+  in_reply_to: msg-messy-005
+
+- message_id: msg-messy-007
+  thread_id: thread-budget-mess
+  from:
+    email: david.chen@company.com
+    name: David Chen
+  to:
+    - email: alice.johnson@company.com
+      name: Alice Johnson
+  cc:
+    - email: bob.smith@company.com
+      name: Bob Smith
+    - email: frank.wilson@company.com
+      name: Frank Wilson
+    - email: schrute@company.com
+      name: Schrute
+  subject: Re: Q2 Budget for Project Phoenix - VENDOR COSTS
+  body: |
+    Alice - sorry for delay, here are the vendor costs:
+
+    VendorX: $85K/year (but 99.5% SLA, 24hr support response)
+    VendorY: $120K/year (99.9% SLA, 2hr support response)
+
+    The difference is $35K annually. Given how critical Phoenix is for
+    the customer experience, I really think VendorY is worth it.
+
+    Also to clarify what I said before - I was talking about the testing
+    strategy with Frank's team, not trying to reassign responsibilities.
+    We definitely agreed Bob's team owns integration in the architecture
+    review. Frank's team picks it up for E2E.
+
+    Can we just get everyone on a call to sort this out? This email chain
+    is getting kinda crazy lol
+
+    DC
+  timestamp: '2025-01-21T09:00:00Z'
+  in_reply_to: msg-messy-006
+
+- message_id: msg-messy-008
+  thread_id: thread-budget-mess
+  from:
+    email: alice.johnson@company.com
+    name: Alice Johnson
+  to:
+    - email: bob.smith@company.com
+      name: Bob Smith
+    - email: david.chen@company.com
+      name: David Chen
+    - email: frank.wilson@company.com
+      name: Frank Wilson
+  cc:
+    - email: schrute@company.com
+      name: Schrute
+  subject: Re: Q2 Budget for Project Phoenix - DECISIONS NEEDED
+  body: |
+    Ok team let me try to summarize what we need to decide:
+
+    1. VENDOR: VendorY vs VendorX ($35K difference)
+       - Dave recommends VendorY
+       - Need to confirm budget allows
+
+    2. TIMELINE: Can we compress by 2 weeks?
+       - Requires parallel testing
+       - Requires 2 more QA engineers (headcount issue)
+       - Deadline MIGHT move to end of March (unconfirmed)
+
+    3. RESPONSIBILITIES: Who owns what testing?
+       - Seems like we agreed: Bob=integration, Frank=E2E
+       - Need to confirm everyone's on same page
+
+    4. INFRASTRUCTURE: $50K (Bob's estimate)
+       - AWS vs Azure decision pending
+
+    Total budget so far: $50K infra + $120K vendor = $170K
+    (Plus potential headcount for QA which is separate)
+
+    I'll set up a 30min call for tomorrow 2pm to finalize.
+
+    Schrute - can you track these decisions once we make them?
+
+    Alice
+  timestamp: '2025-01-21T10:30:00Z'
+  in_reply_to: msg-messy-007
+
+- message_id: msg-messy-009
+  thread_id: thread-budget-mess
+  from:
+    email: bob.smith@company.com
+    name: Bob Smith
+  to:
+    - email: alice.johnson@company.com
+      name: Alice Johnson
+  cc:
+    - email: david.chen@company.com
+      name: David Chen
+    - email: frank.wilson@company.com
+      name: Frank Wilson
+    - email: schrute@company.com
+      name: Schrute
+  subject: Re: Q2 Budget for Project Phoenix - DECISIONS NEEDED
+  body: |
+    Sounds good. 2pm works.
+
+    One more thing - I just remembered Michael wanted us to consider the
+    disaster recovery costs too. That's probably another $15-20K.
+
+    Also Greg from finance said we need formal approval from Karen for
+    anything over $150K, so we're definitely gonna need that since we're
+    at $170K already.
+
+    Sorry to keep adding complications! 😅
+
+    B
+  timestamp: '2025-01-21T11:15:00Z'
+  in_reply_to: msg-messy-008
+
+- message_id: msg-messy-010
+  thread_id: thread-budget-mess
+  from:
+    email: frank.wilson@company.com
+    name: Frank Wilson
+  to:
+    - email: alice.johnson@company.com
+      name: Alice Johnson
+    - email: bob.smith@company.com
+      name: Bob Smith
+    - email: david.chen@company.com
+      name: David Chen
+  cc:
+    - email: schrute@company.com
+      name: Schrute
+  subject: Re: Q2 Budget for Project Phoenix - DECISIONS NEEDED
+  body: |
+    I'll be there.
+
+    Just to be clear though - I can't commit to the compressed timeline
+    without the extra headcount. If Elena blocks that, we stick with
+    the original schedule.
+
+    And yes, Bob's right about the testing split. My bad for the confusion.
+
+    See you tomorrow.
+
+    Frank
+  timestamp: '2025-01-21T12:00:00Z'
+  in_reply_to: msg-messy-009
+
+- message_id: msg-messy-011
+  thread_id: thread-budget-mess
+  from:
+    email: david.chen@company.com
+    name: David Chen
+  to:
+    - email: alice.johnson@company.com
+      name: Alice Johnson
+  cc:
+    - email: bob.smith@company.com
+      name: Bob Smith
+    - email: frank.wilson@company.com
+      name: Frank Wilson
+    - email: schrute@company.com
+      name: Schrute
+  subject: Re: Q2 Budget for Project Phoenix - DECISIONS NEEDED
+  body: |
+    +1 to the call.
+
+    FYI I ran into Rachel at lunch and she mentioned the Phoenix API
+    requirements changed last week? Anyone know about this? Could impact
+    the vendor selection if the API load is gonna be different than we
+    thought.
+
+    Should probably loop in Kevin from architecture if that's true.
+
+    -David
+  timestamp: '2025-01-21T14:20:00Z'
+  in_reply_to: msg-messy-010
+
+- message_id: msg-messy-012
+  thread_id: thread-budget-mess
+  from:
+    email: alice.johnson@company.com
+    name: Alice Johnson
+  to:
+    - email: david.chen@company.com
+      name: David Chen
+    - email: bob.smith@company.com
+      name: Bob Smith
+    - email: frank.wilson@company.com
+      name: Frank Wilson
+  cc:
+    - email: schrute@company.com
+      name: Schrute
+  subject: FINAL DECISIONS - Phoenix Q2 Budget
+  body: |
+    Team,
+
+    After the call today here's what we decided:
+
+    ✅ VENDOR: Going with VendorY ($120K/year)
+    ✅ INFRASTRUCTURE: Approved $50K (AWS, Bob's team to execute)
+    ✅ DISASTER RECOVERY: Approved additional $18K (Bob to get exact quote)
+    ✅ TESTING RESPONSIBILITIES: Confirmed Bob=integration, Frank=E2E+UAT
+    ✅ TIMELINE: Keeping original schedule (no compression)
+       - Elena did not approve additional QA headcount
+       - March deadline rumor was FALSE (still end of April)
+
+    ❌ AZURE: Not approved, staying with AWS
+    ❌ TIMELINE COMPRESSION: Not approved due to headcount constraints
+
+    TOTAL APPROVED BUDGET: $188K
+
+    Next steps:
+    - Bob: Get DR quote by EOW
+    - David: Finalize VendorY contract with legal
+    - Frank: Send testing plan by next Monday
+    - Me: Get formal approval from Karen (finance requirement)
+
+    Thanks everyone for working through this! Let's get Phoenix shipped! 🚀
+
+    Alice Johnson
+    Senior Program Manager
+  timestamp: '2025-01-21T16:45:00Z'
+  in_reply_to: msg-messy-011
