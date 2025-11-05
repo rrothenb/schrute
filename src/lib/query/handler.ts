@@ -98,10 +98,13 @@ export class QueryHandler {
     }
 
     // Get response from Claude
-    const answer = await this.client.prompt(userPrompt, {
+    const rawAnswer = await this.client.prompt(userPrompt, {
       systemPrompt,
       temperature: 0.3, // Lower temperature for factual responses
     })
+
+    // Parse confidence metadata
+    const { answer, confidence, suggested_skill_name } = this.parseConfidenceMetadata(rawAnswer)
 
     // Determine sources and privacy status
     const sources = this.extractSources(accessibleEmails, accessibleSpeechActs, accessibleKnowledge)
@@ -125,6 +128,8 @@ export class QueryHandler {
       sources,
       privacy_restricted: privacyRestricted,
       restricted_info: restrictedInfo,
+      confidence,
+      suggested_skill_name,
     }
   }
 
@@ -232,7 +237,10 @@ export class QueryHandler {
     }
 
     // Final answer (either direct response or after tool uses)
-    const answer = currentAnswer || 'I was unable to generate a response.'
+    const rawAnswer = currentAnswer || 'I was unable to generate a response.'
+
+    // Parse confidence metadata
+    const { answer, confidence, suggested_skill_name } = this.parseConfidenceMetadata(rawAnswer)
 
     // Determine sources
     const sources = this.extractSources(accessibleEmails, accessibleSpeechActs, accessibleKnowledge)
@@ -258,6 +266,8 @@ export class QueryHandler {
       sources,
       privacy_restricted: privacyRestricted,
       restricted_info: restrictedInfo,
+      confidence,
+      suggested_skill_name,
     }
   }
 
@@ -367,7 +377,18 @@ export class QueryHandler {
     }
 
     prompt += `\nQUERY: ${query}\n\n`
-    prompt += `Please answer the query based on the information provided above. Remember to respect privacy constraints.`
+    prompt += `Please answer the query based on the information provided above. Remember to respect privacy constraints.
+
+IMPORTANT: After your answer, include a confidence assessment on a new line:
+CONFIDENCE: [HIGH|MEDIUM|LOW|UNABLE]
+
+If your confidence is UNABLE (meaning you cannot answer the query with the available information and tools):
+SUGGESTED_SKILL: [a descriptive name for a skill that could help answer this query]
+
+For example:
+- If asked to generate a report you don't know how to create: "CONFIDENCE: UNABLE" followed by "SUGGESTED_SKILL: generate-weekly-status-report"
+- If asked about information not in the context: "CONFIDENCE: UNABLE" followed by "SUGGESTED_SKILL: search-external-data"
+`
 
     return prompt
   }
@@ -387,9 +408,52 @@ export class QueryHandler {
     prompt += memoryManager.formatContext(memoryContext)
 
     prompt += `\n\nQUERY: ${query}\n\n`
-    prompt += `Please answer the query based on the information provided above. Remember to respect privacy constraints.`
+    prompt += `Please answer the query based on the information provided above. Remember to respect privacy constraints.
+
+IMPORTANT: After your answer, include a confidence assessment on a new line:
+CONFIDENCE: [HIGH|MEDIUM|LOW|UNABLE]
+
+If your confidence is UNABLE (meaning you cannot answer the query with the available information and tools):
+SUGGESTED_SKILL: [a descriptive name for a skill that could help answer this query]
+
+For example:
+- If asked to generate a report you don't know how to create: "CONFIDENCE: UNABLE" followed by "SUGGESTED_SKILL: generate-weekly-status-report"
+- If asked about information not in the context: "CONFIDENCE: UNABLE" followed by "SUGGESTED_SKILL: search-external-data"
+`
 
     return prompt
+  }
+
+  /**
+   * Parse confidence level and suggested skill from Claude's response
+   * Extracts metadata and returns clean answer + metadata
+   */
+  private parseConfidenceMetadata(rawAnswer: string): {
+    answer: string
+    confidence?: 'high' | 'medium' | 'low' | 'unable'
+    suggested_skill_name?: string
+  } {
+    // Look for CONFIDENCE: pattern
+    const confidenceMatch = rawAnswer.match(/CONFIDENCE:\s*(HIGH|MEDIUM|LOW|UNABLE)/i)
+    const suggestedSkillMatch = rawAnswer.match(/SUGGESTED_SKILL:\s*([^\n]+)/i)
+
+    let confidence: 'high' | 'medium' | 'low' | 'unable' | undefined
+    if (confidenceMatch) {
+      confidence = confidenceMatch[1].toLowerCase() as 'high' | 'medium' | 'low' | 'unable'
+    }
+
+    let suggested_skill_name: string | undefined
+    if (suggestedSkillMatch) {
+      suggested_skill_name = suggestedSkillMatch[1].trim()
+    }
+
+    // Remove metadata lines from answer
+    let answer = rawAnswer
+      .replace(/CONFIDENCE:\s*(HIGH|MEDIUM|LOW|UNABLE)/gi, '')
+      .replace(/SUGGESTED_SKILL:\s*[^\n]+/gi, '')
+      .trim()
+
+    return { answer, confidence, suggested_skill_name }
   }
 
   private extractSources(

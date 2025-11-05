@@ -187,6 +187,8 @@ export const QueryResponseSchema = z.object({
   sources: z.array(z.string()), // message_ids or knowledge_entry ids
   privacy_restricted: z.boolean(),
   restricted_info: z.string().optional(),
+  confidence: z.enum(['high', 'medium', 'low', 'unable']).optional(), // How confident in the answer
+  suggested_skill_name: z.string().optional(), // Suggested skill name if unable to answer
 })
 
 export type QueryResponse = z.infer<typeof QueryResponseSchema>
