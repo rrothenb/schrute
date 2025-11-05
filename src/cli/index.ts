@@ -30,6 +30,7 @@ class SchruteCLI {
   private mcpClient = getMCPClientManager()
   private currentPersonality: PersonalityConfig | null = null
   private useMemorySystem = false
+  private useTools = false // Toggle for automatic tool use
   private schruteConfig: SchruteConfig = {
     name: 'Schrute',
     aliases: ['schrute'],
@@ -73,6 +74,7 @@ class SchruteCLI {
     console.log('  personality <name>    - Switch personality')
     console.log('  personalities         - List available personalities')
     console.log('  memory [on|off]       - Toggle hybrid memory system')
+    console.log('  tools [on|off]        - Toggle automatic tool use with queries')
     console.log('  mcp connect <config>  - Connect to an MCP server')
     console.log('  mcp list              - List connected MCP servers')
     console.log('  mcp tools [server]    - List available MCP tools')
@@ -112,6 +114,9 @@ class SchruteCLI {
           break
         case 'memory':
           this.toggleMemory(args)
+          break
+        case 'tools':
+          this.toggleTools(args)
           break
         case 'mcp':
           await this.handleMCPCommand(args)
@@ -211,6 +216,8 @@ class SchruteCLI {
         personality: this.currentPersonality || undefined,
         threadId,
         useMemorySystem: this.useMemorySystem,
+        mcpClient: this.mcpClient,
+        useTools: this.useTools,
       }
     )
 
@@ -334,6 +341,31 @@ class SchruteCLI {
     }
   }
 
+  toggleTools(arg: string) {
+    const command = arg.toLowerCase()
+
+    if (command === 'on') {
+      this.useTools = true
+      console.log('✓ Automatic tool use enabled')
+      console.log('  Queries will automatically discover and use connected MCP tools')
+      const connectedServers = this.mcpClient.getConnections().filter((c) => c.connected)
+      if (connectedServers.length > 0) {
+        console.log(`  Connected servers: ${connectedServers.map((s) => s.serverName).join(', ')}`)
+        const toolCount = connectedServers.reduce((sum, s) => sum + s.tools.length, 0)
+        console.log(`  Available tools: ${toolCount}`)
+      } else {
+        console.log('  ⚠️  No MCP servers connected. Use "mcp connect" to connect servers.')
+      }
+    } else if (command === 'off') {
+      this.useTools = false
+      console.log('✓ Automatic tool use disabled')
+      console.log('  Queries will only use email content (default mode)')
+    } else {
+      console.log(`Automatic tool use is currently: ${this.useTools ? 'ON' : 'OFF'}`)
+      console.log('Usage: tools [on|off]')
+    }
+  }
+
   showStatus() {
     console.log('Current Status:')
     console.log(`  Emails loaded: ${this.emails.length}`)
@@ -342,8 +374,15 @@ class SchruteCLI {
     console.log(`  Participants tracked: ${this.privacyTracker.getAllParticipants().length}`)
     console.log(`  Current personality: ${this.currentPersonality?.name || 'none'}`)
     console.log(`  Memory system: ${this.useMemorySystem ? 'ON (hybrid)' : 'OFF (legacy)'}`)
+    console.log(`  Automatic tool use: ${this.useTools ? 'ON' : 'OFF'}`)
     const connections = this.mcpClient.getConnections()
     console.log(`  MCP servers connected: ${connections.filter((c) => c.connected).length}`)
+    if (this.useTools) {
+      const toolCount = connections
+        .filter((c) => c.connected)
+        .reduce((sum, c) => sum + c.tools.length, 0)
+      console.log(`  Available tools: ${toolCount}`)
+    }
     console.log()
     console.log('Schrute Config:')
     console.log(`  Name: ${this.schruteConfig.name}`)

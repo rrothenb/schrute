@@ -1,4 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk'
+import type {
+  MessageParam,
+  Tool,
+} from '@anthropic-ai/sdk/resources/messages.js'
 
 export interface ClaudeMessage {
   role: 'user' | 'assistant'
@@ -10,6 +14,35 @@ export interface ClaudeOptions {
   maxTokens?: number
   temperature?: number
   systemPrompt?: string
+  tools?: Tool[]
+}
+
+export interface ClaudeTool {
+  name: string
+  description: string
+  input_schema: {
+    type: 'object'
+    properties: Record<string, unknown>
+    required?: string[]
+  }
+}
+
+export interface ToolUseRequest {
+  id: string
+  name: string
+  input: Record<string, unknown>
+}
+
+export interface ToolUseResult {
+  tool_use_id: string
+  content: string | object
+  is_error?: boolean
+}
+
+export interface ChatWithToolsResponse {
+  text?: string
+  tool_uses: ToolUseRequest[]
+  stop_reason: string | null
 }
 
 const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022'
@@ -88,6 +121,108 @@ export class ClaudeClient {
       return JSON.parse(jsonStr) as T
     } catch (error) {
       throw new Error(`Failed to parse JSON response: ${error}`)
+    }
+  }
+
+  /**
+   * Send a message with tools and handle tool use responses
+   * Returns text response and any tool use requests
+   */
+  async promptWithTools(
+    prompt: string,
+    options: ClaudeOptions & { tools: Tool[] }
+  ): Promise<ChatWithToolsResponse> {
+    const response = await this.client.messages.create({
+      model: options.model || DEFAULT_MODEL,
+      max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
+      temperature: options.temperature || DEFAULT_TEMPERATURE,
+      system: options.systemPrompt,
+      tools: options.tools,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    })
+
+    // Extract text and tool uses from response
+    let text: string | undefined
+    const tool_uses: ToolUseRequest[] = []
+
+    for (const block of response.content) {
+      if (block.type === 'text') {
+        text = block.text
+      } else if (block.type === 'tool_use') {
+        tool_uses.push({
+          id: block.id,
+          name: block.name,
+          input: block.input as Record<string, unknown>,
+        })
+      }
+    }
+
+    return {
+      text,
+      tool_uses,
+      stop_reason: response.stop_reason,
+    }
+  }
+
+  /**
+   * Continue a conversation with tool results
+   * Useful for multi-turn tool use
+   */
+  async continueWithToolResults(
+    conversationHistory: MessageParam[],
+    toolResults: ToolUseResult[],
+    options: ClaudeOptions & { tools: Tool[] }
+  ): Promise<ChatWithToolsResponse> {
+    // Build tool result message
+    const toolResultContent = toolResults.map((result) => ({
+      type: 'tool_result' as const,
+      tool_use_id: result.tool_use_id,
+      content: typeof result.content === 'string' ? result.content : JSON.stringify(result.content),
+      is_error: result.is_error,
+    }))
+
+    const messages: MessageParam[] = [
+      ...conversationHistory,
+      {
+        role: 'user',
+        content: toolResultContent,
+      },
+    ]
+
+    const response = await this.client.messages.create({
+      model: options.model || DEFAULT_MODEL,
+      max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
+      temperature: options.temperature || DEFAULT_TEMPERATURE,
+      system: options.systemPrompt,
+      tools: options.tools,
+      messages,
+    })
+
+    // Extract text and tool uses from response
+    let text: string | undefined
+    const tool_uses: ToolUseRequest[] = []
+
+    for (const block of response.content) {
+      if (block.type === 'text') {
+        text = block.text
+      } else if (block.type === 'tool_use') {
+        tool_uses.push({
+          id: block.id,
+          name: block.name,
+          input: block.input as Record<string, unknown>,
+        })
+      }
+    }
+
+    return {
+      text,
+      tool_uses,
+      stop_reason: response.stop_reason,
     }
   }
 }

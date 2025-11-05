@@ -1,4 +1,6 @@
 import { getClaudeClient } from '~/lib/claude/index.js'
+import type { Tool } from '@anthropic-ai/sdk/resources/messages.js'
+import type { ToolUseResult } from '~/lib/claude/client.js'
 import {
   QueryRequest,
   QueryResponse,
@@ -11,6 +13,7 @@ import {
 } from '~/lib/types/index.js'
 import { PrivacyTracker } from '~/lib/privacy/index.js'
 import { getMemoryManager } from '~/lib/memory/index.js'
+import { MCPClientManager } from '~/lib/mcp/client.js'
 
 export interface QueryContext {
   emails: Email[]
@@ -20,6 +23,8 @@ export interface QueryContext {
   personality?: PersonalityConfig
   threadId?: string
   useMemorySystem?: boolean // Enable hybrid memory (default: false for backward compatibility)
+  mcpClient?: MCPClientManager // Optional MCP client for tool use
+  useTools?: boolean // Enable automatic tool use (default: false)
 }
 
 const BASE_SYSTEM_PROMPT = `You are Schrute, an AI coordination assistant. You help people by answering questions about their email conversations, tracking decisions and commitments, and maintaining shared knowledge.
@@ -45,6 +50,12 @@ export class QueryHandler {
    * Handle a query request
    */
   async handleQuery(request: QueryRequest, context: QueryContext): Promise<QueryResponse> {
+    // If tool use is enabled and MCP client is available, use tool-enabled path
+    if (context.useTools && context.mcpClient) {
+      return this.handleQueryWithTools(request, context)
+    }
+
+    // Original non-tool path
     const allParticipants = [request.asker, ...request.context_participants]
 
     // Filter context based on privacy
@@ -115,6 +126,152 @@ export class QueryHandler {
       privacy_restricted: privacyRestricted,
       restricted_info: restrictedInfo,
     }
+  }
+
+  /**
+   * Handle a query request with tool use enabled
+   * Automatically discovers and invokes MCP tools when Claude requests them
+   */
+  private async handleQueryWithTools(
+    request: QueryRequest,
+    context: QueryContext
+  ): Promise<QueryResponse> {
+    if (!context.mcpClient) {
+      throw new Error('MCP client is required for tool use')
+    }
+
+    const allParticipants = [request.asker, ...request.context_participants]
+
+    // Filter context based on privacy
+    const accessibleEmails = context.privacyTracker.filterEmails(context.emails, allParticipants)
+    const accessibleSpeechActs = context.privacyTracker.filterSpeechActs(
+      context.speechActs,
+      allParticipants
+    )
+    const accessibleKnowledge = context.knowledgeEntries
+      ? context.privacyTracker.filterKnowledgeEntries(context.knowledgeEntries, allParticipants)
+      : []
+
+    // Build the prompt
+    const systemPrompt = this.buildSystemPrompt(context.personality)
+    let userPrompt: string
+
+    if (context.useMemorySystem && context.threadId) {
+      const memoryManager = getMemoryManager()
+      const memoryContext = await memoryManager.buildContext(
+        accessibleEmails,
+        context.threadId,
+        accessibleSpeechActs,
+        accessibleKnowledge
+      )
+      userPrompt = this.buildUserPromptWithMemory(
+        request.query,
+        memoryContext,
+        allParticipants
+      )
+    } else {
+      userPrompt = this.buildUserPrompt(
+        request.query,
+        accessibleEmails,
+        accessibleSpeechActs,
+        accessibleKnowledge,
+        allParticipants
+      )
+    }
+
+    // Discover available MCP tools
+    const tools = this.convertMCPToolsToClaude(context.mcpClient.getAllTools())
+
+    // Track tool uses for sources
+    const toolsUsed: string[] = []
+
+    // Use tools with Claude (with iteration limit)
+    const maxIterations = 5
+    let currentAnswer: string | undefined
+    let iteration = 0
+
+    while (iteration < maxIterations) {
+      const response = await this.client.promptWithTools(userPrompt, {
+        systemPrompt,
+        temperature: 0.3,
+        tools,
+      })
+
+      currentAnswer = response.text
+
+      // If no tool uses, we're done
+      if (response.tool_uses.length === 0) {
+        break
+      }
+
+      // Execute tool uses
+      const toolResults: ToolUseResult[] = []
+      for (const toolUse of response.tool_uses) {
+        // Track which tools were used
+        toolsUsed.push(toolUse.name)
+
+        // Invoke the MCP tool
+        const result = await context.mcpClient.invokeToolByName(
+          toolUse.name,
+          toolUse.input
+        )
+
+        toolResults.push({
+          tool_use_id: toolUse.id,
+          content: result.success ? JSON.stringify(result.result) : result.error || 'Tool execution failed',
+          is_error: !result.success,
+        })
+      }
+
+      // Continue conversation with tool results (for next iteration)
+      userPrompt = `Previous context maintained. Tool results provided.`
+      iteration++
+
+      // If we have tool results, continue the loop
+      // The loop will end when Claude doesn't request more tools
+    }
+
+    // Final answer (either direct response or after tool uses)
+    const answer = currentAnswer || 'I was unable to generate a response.'
+
+    // Determine sources
+    const sources = this.extractSources(accessibleEmails, accessibleSpeechActs, accessibleKnowledge)
+    sources.push(...toolsUsed.map((toolName) => `tool:${toolName}`))
+
+    const privacyRestricted = accessibleEmails.length < context.emails.length ||
+      accessibleSpeechActs.length < context.speechActs.length
+
+    let restrictedInfo: string | undefined
+    if (privacyRestricted) {
+      const restrictedParticipants = this.findRestrictedParticipants(
+        context,
+        allParticipants
+      )
+      if (restrictedParticipants.length > 0) {
+        const names = restrictedParticipants.map((p) => p.name || p.email).join(', ')
+        restrictedInfo = `Some information has been withheld due to the presence of: ${names}`
+      }
+    }
+
+    return {
+      answer,
+      sources,
+      privacy_restricted: privacyRestricted,
+      restricted_info: restrictedInfo,
+    }
+  }
+
+  /**
+   * Convert MCP tools to Claude tool format
+   */
+  private convertMCPToolsToClaude(
+    mcpTools: Array<{ name: string; description?: string; inputSchema: unknown; serverName: string }>
+  ): Tool[] {
+    return mcpTools.map((tool) => ({
+      name: tool.name,
+      description: `[${tool.serverName}] ${tool.description || 'No description'}`,
+      input_schema: tool.inputSchema as Tool['input_schema'],
+    }))
   }
 
   private buildSystemPrompt(personality?: PersonalityConfig): string {
