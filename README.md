@@ -337,7 +337,51 @@ system_prompt_additions: |
 
 ## 🧪 Testing
 
-Sample email threads are provided in `events/`:
+### Running Tests
+
+Schrute includes a comprehensive test suite with 93 tests:
+
+```bash
+# Run all tests (unit + integration)
+npm test
+
+# Run with coverage report
+npm test -- --coverage
+
+# Run in watch mode
+npm test -- --watch
+```
+
+**Test Categories:**
+- **37 unit tests** - Fast, no API key required
+- **8 integration tests** - Component integration (some require API key)
+- **48 live API tests** - Full Claude API integration (requires API key)
+
+### Running Live API Tests
+
+Live API tests require an Anthropic API key. They are automatically skipped if `ANTHROPIC_API_KEY` is not set:
+
+```bash
+# Set API key to run full test suite
+export ANTHROPIC_API_KEY=sk-ant-your-key-here
+npm test
+
+# Run specific test suite
+npm test -- handler.live.test.ts
+```
+
+**Estimated cost per full test run:** ~$0.17-0.32
+
+See **[TESTING.md](TESTING.md)** for detailed information about:
+- Test organization and structure
+- Running specific test suites
+- API cost breakdowns
+- Writing new tests
+- CI/CD integration
+
+### Sample Email Threads
+
+Sample email threads are provided in `events/` for testing:
 
 - `thread-project-alpha.yaml` - Project planning with decisions
 - `thread-meeting-request.yaml` - Meeting scheduling
