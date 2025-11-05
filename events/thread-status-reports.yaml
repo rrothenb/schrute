@@ -1,0 +1,126 @@
+- message_id: msg-status-001
+  thread_id: thread-status-reports
+  from:
+    email: alice@company.com
+    name: Alice Johnson
+  to:
+    - email: schrute@company.com
+      name: Schrute
+  cc:
+    - email: bob@company.com
+      name: Bob Smith
+  subject: Weekly Status Report Request
+  body: |
+    Hi Schrute,
+
+    Can you generate a weekly status report for the team?
+    I need to see what everyone's working on and what's been completed.
+
+    Thanks!
+    Alice
+  timestamp: '2025-01-18T09:00:00Z'
+  in_reply_to: undefined
+
+- message_id: msg-status-002
+  thread_id: thread-status-reports
+  from:
+    email: bob@company.com
+    name: Bob Smith
+  to:
+    - email: alice@company.com
+      name: Alice Johnson
+    - email: schrute@company.com
+      name: Schrute
+  cc: []
+  subject: Re: Weekly Status Report Request
+  body: |
+    Alice, I committed to finishing the API integration by Friday.
+    Should be done by end of day.
+
+    Also working on the database migration - that's about 60% complete.
+
+    Bob
+  timestamp: '2025-01-18T10:30:00Z'
+  in_reply_to: msg-status-001
+
+- message_id: msg-status-003
+  thread_id: thread-status-reports
+  from:
+    email: carol@company.com
+    name: Carol Davis
+  to:
+    - email: alice@company.com
+      name: Alice Johnson
+    - email: schrute@company.com
+      name: Schrute
+  cc:
+    - email: bob@company.com
+      name: Bob Smith
+  subject: Re: Weekly Status Report Request
+  body: |
+    I've been focused on the UI redesign.
+
+    Completed: New dashboard layout, user profile page
+    In progress: Settings page (should be done by Wednesday)
+
+    I also need to review Bob's API work once it's ready.
+
+    Carol
+  timestamp: '2025-01-18T11:15:00Z'
+  in_reply_to: msg-status-002
+
+- message_id: msg-status-004
+  thread_id: thread-status-reports
+  from:
+    email: alice@company.com
+    name: Alice Johnson
+  to:
+    - email: schrute@company.com
+      name: Schrute
+  cc:
+    - email: bob@company.com
+      name: Bob Smith
+    - email: carol@company.com
+      name: Carol Davis
+  subject: Re: Weekly Status Report Request
+  body: |
+    Schrute, this is exactly the kind of summary I need every week.
+
+    Can you create a weekly status report that shows:
+    - All open commitments grouped by person
+    - What's been completed this week
+    - What's in progress with estimated completion dates
+    - Any blockers or dependencies between team members
+
+    Format it nicely so I can share with leadership.
+
+    Alice
+  timestamp: '2025-01-18T14:00:00Z'
+  in_reply_to: msg-status-003
+
+- message_id: msg-status-005
+  thread_id: thread-status-reports
+  from:
+    email: bob@company.com
+    name: Bob Smith
+  to:
+    - email: alice@company.com
+      name: Alice Johnson
+    - email: schrute@company.com
+      name: Schrute
+  cc:
+    - email: carol@company.com
+      name: Carol Davis
+  subject: Re: Weekly Status Report Request
+  body: |
+    Update on my commitments:
+
+    ✅ API integration - COMPLETED (finished this morning!)
+    🔄 Database migration - 80% complete, will finish Monday
+    📋 Need to start on performance testing next week
+
+    Let me know if you need any other details for the report.
+
+    Bob
+  timestamp: '2025-01-18T16:30:00Z'
+  in_reply_to: msg-status-004

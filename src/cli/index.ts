@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import 'dotenv/config'
-import { createInterface } from 'readline'
+import { createInterface, Interface } from 'readline'
 import { resolve } from 'path'
 import { loadEmailsFromYaml, buildThreads } from '~/lib/email/index.js'
 import { createSpeechActDetector, createSpeechActStore } from '~/lib/speech-acts/index.js'
@@ -31,6 +31,7 @@ class SchruteCLI {
   private currentPersonality: PersonalityConfig | null = null
   private useMemorySystem = false
   private useTools = false // Toggle for automatic tool use
+  private rl?: Interface // Readline interface for interactive input
   private schruteConfig: SchruteConfig = {
     name: 'Schrute',
     aliases: ['schrute'],
@@ -226,6 +227,24 @@ class SchruteCLI {
 
     if (response.privacy_restricted && response.restricted_info) {
       console.log(`\n⚠️  ${response.restricted_info}`)
+    }
+
+    // Check if confidence is 'unable' and offer to create a skill
+    if (response.confidence === 'unable') {
+      console.log('\n💡 I was unable to answer this query with my current capabilities.')
+
+      if (response.suggested_skill_name) {
+        console.log(`   Suggested skill: ${response.suggested_skill_name}`)
+      }
+
+      console.log('\nWould you like me to learn how to answer this type of query?')
+      console.log('Type "yes" to create a new skill, or press Enter to continue.')
+
+      const shouldCreateSkill = await this.promptUser('')
+
+      if (shouldCreateSkill.toLowerCase() === 'yes' || shouldCreateSkill.toLowerCase() === 'y') {
+        await this.interactiveSkillCreation(question, response.suggested_skill_name)
+      }
     }
   }
 
@@ -744,26 +763,147 @@ class SchruteCLI {
     }
   }
 
+  /**
+   * Prompt the user for input interactively
+   */
+  private promptUser(question: string): Promise<string> {
+    return new Promise((resolve) => {
+      if (!this.rl) {
+        resolve('')
+        return
+      }
+
+      this.rl.question(question, (answer) => {
+        resolve(answer)
+      })
+    })
+  }
+
+  /**
+   * Interactive skill creation workflow
+   * Guides the user through creating a new dynamic skill
+   */
+  private async interactiveSkillCreation(originalQuery: string, suggestedName?: string) {
+    console.log('\n=== Creating a New Skill ===\n')
+
+    // Check if dynamic-skills server is connected
+    const tool = this.mcpClient.findTool('create_skill')
+    if (!tool) {
+      console.log('⚠️  Dynamic Skills server is not connected.')
+      console.log('Please connect it first:')
+      console.log('  mcp connect dynamic-skills node dist/mcp-servers/dynamic-skills/server.js')
+      return
+    }
+
+    // Get skill name
+    const defaultName = suggestedName || 'custom-skill'
+    console.log(`Skill name (default: ${defaultName}):`)
+    const skillName = (await this.promptUser('  ')).trim() || defaultName
+
+    // Get skill description
+    console.log('\nSkill description:')
+    console.log('  (Describe what this skill does)')
+    const description = (await this.promptUser('  ')).trim() || `Handles queries like: ${originalQuery}`
+
+    // Get prompt template
+    console.log('\nPrompt template:')
+    console.log('  (Write instructions for how to answer this type of query)')
+    console.log('  (Use {{placeholder}} for input variables)')
+    console.log('  Example: "Generate a weekly status report for the following commitments: {{commitments}}"')
+    const promptTemplate = (await this.promptUser('  ')).trim()
+
+    if (!promptTemplate) {
+      console.log('⚠️  Prompt template is required. Skill creation cancelled.')
+      return
+    }
+
+    // Parse placeholders from template
+    const placeholderMatches = promptTemplate.matchAll(/\{\{(\w+)\}\}/g)
+    const placeholderNames = Array.from(new Set(Array.from(placeholderMatches, (m) => m[1])))
+
+    // Get descriptions for each placeholder
+    const inputPlaceholders = []
+    if (placeholderNames.length > 0) {
+      console.log('\nPlaceholder descriptions:')
+      for (const name of placeholderNames) {
+        console.log(`  {{${name}}} - What does this represent?`)
+        const desc = (await this.promptUser('    ')).trim() || `The ${name} value`
+        inputPlaceholders.push({
+          name,
+          description: desc,
+          required: true,
+        })
+      }
+    }
+
+    // Create the skill
+    console.log('\n Creating skill...')
+
+    const result = await this.mcpClient.invokeToolByName('create_skill', {
+      name: skillName,
+      description,
+      prompt_template: promptTemplate,
+      input_placeholders: inputPlaceholders,
+    })
+
+    if (result.success) {
+      console.log(`✓ Skill "${skillName}" created successfully!`)
+      console.log('\nYou can now use it with:')
+      console.log(`  skills invoke ${skillName}`)
+
+      // Offer to test it now
+      console.log('\nWould you like to test the skill now? (yes/no)')
+      const shouldTest = await this.promptUser('  ')
+
+      if (shouldTest.toLowerCase() === 'yes' || shouldTest.toLowerCase() === 'y') {
+        // Get values for placeholders
+        const args: Record<string, string> = {}
+        console.log('\nProvide values for the skill:')
+        for (const placeholder of inputPlaceholders) {
+          console.log(`  ${placeholder.name} (${placeholder.description}):`)
+          const value = (await this.promptUser('    ')).trim()
+          args[placeholder.name] = value
+        }
+
+        // Invoke the skill
+        console.log('\nInvoking skill...')
+        const invokeResult = await this.mcpClient.invokeToolByName(skillName, args)
+
+        if (invokeResult.success) {
+          const response = JSON.parse(JSON.stringify(invokeResult.result))
+          if (response && response.content && response.content[0]) {
+            console.log('\nResult:')
+            console.log(response.content[0].text)
+          }
+        } else {
+          console.error('Error invoking skill:', invokeResult.error)
+        }
+      }
+    } else {
+      console.error('Error creating skill:', result.error)
+    }
+  }
+
   async start() {
     await this.initialize()
 
-    const rl = createInterface({
+    this.rl = createInterface({
       input: process.stdin,
       output: process.stdout,
       prompt: 'schrute> ',
     })
 
-    rl.prompt()
+    this.rl.prompt()
 
-    rl.on('line', async (line) => {
+    this.rl.on('line', async (line) => {
       const input = line.trim()
       if (input) {
         await this.handleCommand(input)
       }
-      rl.prompt()
+      this.rl?.prompt()
     })
 
-    rl.on('close', () => {
+    this.rl.on('close', () => {
       console.log('\nGoodbye!')
       process.exit(0)
     })
