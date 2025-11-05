@@ -17,7 +17,7 @@ AI coordination assistant using email interface. Phase 1 prototype is **COMPLETE
 - Cloud: AWS (SES, DynamoDB) - deployment via SAM when ready (Phase 2)
 - LLM: Anthropic Claude API (claude-3-5-sonnet-20241022)
 - MCP: Model Context Protocol SDK for extensibility
-- Testing: Jest (when tests are written)
+- Testing: Jest with TypeScript + ESM (93 tests: 37 unit, 8 integration, 48 live API)
 
 ## 📁 Project Structure
 
@@ -299,6 +299,41 @@ schrute> load events/thread-mixed-participants.yaml
 schrute> query What is the budget for raises?
 # Should see: "Cannot reveal due to presence of..."
 ```
+
+### Testing
+
+Schrute includes a comprehensive automated test suite:
+
+**Test Structure:**
+```bash
+# Run all tests (93 total)
+npm test
+
+# Run unit tests only (37 tests, fast, no API key)
+npm test -- parser.test.ts store.test.ts tracker.test.ts
+
+# Run live API tests (48 tests, requires API key)
+export ANTHROPIC_API_KEY=sk-ant-...
+npm test -- *.live.test.ts
+```
+
+**Test Categories:**
+- **Unit Tests (37):** Email parser, speech act store, privacy tracker, personality loader, MCP types
+- **Integration Tests (8):** Component integration, sample scenario processing, end-to-end workflows
+- **Live API Tests (48):** Query handler, activation decider, memory summarizer, dynamic skills invoker
+
+**Key Features:**
+- Automatic skipping of API tests when `ANTHROPIC_API_KEY` not set
+- Estimated API cost per full run: ~$0.17-0.32
+- Jest with TypeScript + ESM support
+- Module name mapping for `~/*` path alias
+- Coverage collection configured
+
+See **TESTING.md** for comprehensive testing documentation including:
+- Detailed test organization
+- Cost breakdowns by component
+- Writing new tests
+- CI/CD integration strategies
 
 ## 🚫 Never Edit
 - `LICENSE` file
