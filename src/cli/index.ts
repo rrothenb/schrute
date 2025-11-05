@@ -27,6 +27,7 @@ class SchruteCLI {
   private personalityLoader = createPersonalityLoader()
   private activationDecider = createActivationDecider()
   private currentPersonality: PersonalityConfig | null = null
+  private useMemorySystem = false
   private schruteConfig: SchruteConfig = {
     name: 'Schrute',
     aliases: ['schrute'],
@@ -69,6 +70,7 @@ class SchruteCLI {
     console.log('  threads             - Show email threads')
     console.log('  personality <name>  - Switch personality')
     console.log('  personalities       - List available personalities')
+    console.log('  memory [on|off]     - Toggle hybrid memory system')
     console.log('  status              - Show current status')
     console.log('  help                - Show this help')
     console.log('  exit                - Exit the CLI')
@@ -99,6 +101,9 @@ class SchruteCLI {
           break
         case 'personalities':
           this.listPersonalities()
+          break
+        case 'memory':
+          this.toggleMemory(args)
           break
         case 'status':
           this.showStatus()
@@ -172,6 +177,9 @@ class SchruteCLI {
     console.log(`Query: ${question}`)
     console.log('Processing...\n')
 
+    // Determine thread ID (use first thread if available)
+    const threadId = this.threads.length > 0 ? this.threads[0].thread_id : undefined
+
     const response = await this.queryHandler.handleQuery(
       {
         query: question,
@@ -183,6 +191,8 @@ class SchruteCLI {
         speechActs: this.speechActStore.getAll(),
         privacyTracker: this.privacyTracker,
         personality: this.currentPersonality || undefined,
+        threadId,
+        useMemorySystem: this.useMemorySystem,
       }
     )
 
@@ -289,6 +299,23 @@ class SchruteCLI {
     }
   }
 
+  toggleMemory(arg: string) {
+    const command = arg.toLowerCase()
+
+    if (command === 'on') {
+      this.useMemorySystem = true
+      console.log('✓ Hybrid memory system enabled')
+      console.log('  Queries will use recent messages + summaries for older messages')
+    } else if (command === 'off') {
+      this.useMemorySystem = false
+      console.log('✓ Hybrid memory system disabled')
+      console.log('  Queries will use all messages directly (legacy mode)')
+    } else {
+      console.log(`Memory system is currently: ${this.useMemorySystem ? 'ON' : 'OFF'}`)
+      console.log('Usage: memory [on|off]')
+    }
+  }
+
   showStatus() {
     console.log('Current Status:')
     console.log(`  Emails loaded: ${this.emails.length}`)
@@ -296,6 +323,7 @@ class SchruteCLI {
     console.log(`  Speech acts detected: ${this.speechActStore.count()}`)
     console.log(`  Participants tracked: ${this.privacyTracker.getAllParticipants().length}`)
     console.log(`  Current personality: ${this.currentPersonality?.name || 'none'}`)
+    console.log(`  Memory system: ${this.useMemorySystem ? 'ON (hybrid)' : 'OFF (legacy)'}`)
     console.log()
     console.log('Schrute Config:')
     console.log(`  Name: ${this.schruteConfig.name}`)

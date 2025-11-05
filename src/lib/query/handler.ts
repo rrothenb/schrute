@@ -7,8 +7,10 @@ import {
   KnowledgeEntry,
   EmailAddress,
   PersonalityConfig,
+  MemoryContext,
 } from '~/lib/types/index.js'
 import { PrivacyTracker } from '~/lib/privacy/index.js'
+import { getMemoryManager } from '~/lib/memory/index.js'
 
 export interface QueryContext {
   emails: Email[]
@@ -16,6 +18,8 @@ export interface QueryContext {
   knowledgeEntries?: KnowledgeEntry[]
   privacyTracker: PrivacyTracker
   personality?: PersonalityConfig
+  threadId?: string
+  useMemorySystem?: boolean // Enable hybrid memory (default: false for backward compatibility)
 }
 
 const BASE_SYSTEM_PROMPT = `You are Schrute, an AI coordination assistant. You help people by answering questions about their email conversations, tracking decisions and commitments, and maintaining shared knowledge.
@@ -53,15 +57,34 @@ export class QueryHandler {
       ? context.privacyTracker.filterKnowledgeEntries(context.knowledgeEntries, allParticipants)
       : []
 
-    // Build the prompt
+    // Build the prompt (with or without memory system)
     const systemPrompt = this.buildSystemPrompt(context.personality)
-    const userPrompt = this.buildUserPrompt(
-      request.query,
-      accessibleEmails,
-      accessibleSpeechActs,
-      accessibleKnowledge,
-      allParticipants
-    )
+    let userPrompt: string
+
+    if (context.useMemorySystem && context.threadId) {
+      // Use memory system to build context
+      const memoryManager = getMemoryManager()
+      const memoryContext = await memoryManager.buildContext(
+        accessibleEmails,
+        context.threadId,
+        accessibleSpeechActs,
+        accessibleKnowledge
+      )
+      userPrompt = this.buildUserPromptWithMemory(
+        request.query,
+        memoryContext,
+        allParticipants
+      )
+    } else {
+      // Legacy approach: use all accessible emails
+      userPrompt = this.buildUserPrompt(
+        request.query,
+        accessibleEmails,
+        accessibleSpeechActs,
+        accessibleKnowledge,
+        allParticipants
+      )
+    }
 
     // Get response from Claude
     const answer = await this.client.prompt(userPrompt, {
@@ -187,6 +210,26 @@ export class QueryHandler {
     }
 
     prompt += `\nQUERY: ${query}\n\n`
+    prompt += `Please answer the query based on the information provided above. Remember to respect privacy constraints.`
+
+    return prompt
+  }
+
+  /**
+   * Build user prompt using memory system (hybrid: recent messages + summaries)
+   */
+  private buildUserPromptWithMemory(
+    query: string,
+    memoryContext: MemoryContext,
+    participants: EmailAddress[]
+  ): string {
+    let prompt = `Current conversation participants: ${participants.map((p) => p.name || p.email).join(', ')}\n\n`
+
+    // Use the memory manager's formatter
+    const memoryManager = getMemoryManager()
+    prompt += memoryManager.formatContext(memoryContext)
+
+    prompt += `\n\nQUERY: ${query}\n\n`
     prompt += `Please answer the query based on the information provided above. Remember to respect privacy constraints.`
 
     return prompt
