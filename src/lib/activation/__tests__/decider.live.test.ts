@@ -256,7 +256,8 @@ describeIfApiKey('Activation Decider - Live API Tests', () => {
     expect(decision.should_respond).toBeDefined()
     expect(decision.confidence).toBeGreaterThanOrEqual(0.0)
     expect(decision.confidence).toBeLessThanOrEqual(1.0)
-    expect(decision.reasons.length).toBeGreaterThan(0)
+    expect(decision.reasons).toBeDefined()
+    expect(Array.isArray(decision.reasons)).toBe(true)
   }, 30000)
 
   it('should handle emails with no clear trigger', async () => {

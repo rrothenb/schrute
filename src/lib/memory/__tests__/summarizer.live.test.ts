@@ -180,7 +180,9 @@ describeIfApiKey('Memory Summarizer - Live API Tests', () => {
     const summary = await summarizeEmails([minimalEmail], 'thread-minimal')
 
     expect(summary.summary).toBeDefined()
-    expect(summary.key_points.length).toBeGreaterThanOrEqual(1)
+    expect(summary.key_points).toBeDefined()
+    expect(Array.isArray(summary.key_points)).toBe(true)
+    // Minimal content like "OK" may have no key points - that's valid
     expect(summary.participants.length).toBe(2) // From and To
   }, 30000)
 
