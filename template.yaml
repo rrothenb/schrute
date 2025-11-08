@@ -1,0 +1,461 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Schrute - AI Coordination Assistant Framework (Phase 2)
+  Serverless email processing with speech act detection and intelligent response
+
+Parameters:
+  SchruteEmail:
+    Type: String
+    Description: Email address for Schrute (e.g., schrute@yourdomain.com)
+    Default: schrute@example.com
+
+  SenderDomain:
+    Type: String
+    Description: Verified SES domain for sending emails
+    Default: example.com
+
+  AnthropicApiKey:
+    Type: String
+    Description: Anthropic API key for Claude
+    NoEcho: true
+
+  ContextWindowSize:
+    Type: Number
+    Description: Number of recent messages to include in full context
+    Default: 10
+    MinValue: 5
+    MaxValue: 50
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: nodejs18.x
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        NODE_ENV: production
+        AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+
+Resources:
+  # ============================================================================
+  # S3 Buckets
+  # ============================================================================
+
+  RawEmailsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::StackName}-emails-raw'
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldEmails
+            Status: Enabled
+            ExpirationInDays: 90
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  ProcessedEmailsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::StackName}-emails-processed'
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldProcessed
+            Status: Enabled
+            ExpirationInDays: 90
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  KnowledgeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::StackName}-knowledge'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+
+  PersonalitiesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::StackName}-personalities'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  SkillsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::StackName}-skills'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  # ============================================================================
+  # DynamoDB Tables
+  # ============================================================================
+
+  ThreadsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-threads'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: thread_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: thread_id
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  MessagesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-messages'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: message_id
+          AttributeType: S
+        - AttributeName: thread_id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: message_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: thread_id-timestamp-index
+          KeySchema:
+            - AttributeName: thread_id
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  SpeechActsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-speech-acts'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: act_id
+          AttributeType: S
+        - AttributeName: thread_id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+        - AttributeName: type
+          AttributeType: S
+      KeySchema:
+        - AttributeName: act_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: thread_id-timestamp-index
+          KeySchema:
+            - AttributeName: thread_id
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: type-timestamp-index
+          KeySchema:
+            - AttributeName: type
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  ActivationLogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-activation-log'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: log_id
+          AttributeType: S
+        - AttributeName: thread_id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: log_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: thread_id-timestamp-index
+          KeySchema:
+            - AttributeName: thread_id
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+
+  # ============================================================================
+  # Secrets Manager
+  # ============================================================================
+
+  AnthropicApiKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${AWS::StackName}/anthropic-api-key'
+      Description: Anthropic API key for Claude
+      SecretString: !Ref AnthropicApiKey
+
+  # ============================================================================
+  # Lambda Functions
+  # ============================================================================
+
+  IngestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-ingest'
+      CodeUri: dist/
+      Handler: lambdas/ingest/handler.handler
+      MemorySize: 512
+      Timeout: 30
+      Environment:
+        Variables:
+          THREADS_TABLE: !Ref ThreadsTable
+          MESSAGES_TABLE: !Ref MessagesTable
+          PROCESSED_BUCKET: !Ref ProcessedEmailsBucket
+          PROCESSOR_FUNCTION: !GetAtt ProcessorFunction.Arn
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref RawEmailsBucket
+        - S3CrudPolicy:
+            BucketName: !Ref ProcessedEmailsBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ThreadsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MessagesTable
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ProcessorFunction
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref RawEmailsBucket
+            Events: s3:ObjectCreated:*
+
+  ProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-processor'
+      CodeUri: dist/
+      Handler: lambdas/processor/handler.handler
+      MemorySize: 1024
+      Timeout: 60
+      Environment:
+        Variables:
+          ANTHROPIC_API_KEY_SECRET: !Ref AnthropicApiKeySecret
+          MESSAGES_TABLE: !Ref MessagesTable
+          THREADS_TABLE: !Ref ThreadsTable
+          SPEECH_ACTS_TABLE: !Ref SpeechActsTable
+          ACTIVATION_LOG_TABLE: !Ref ActivationLogTable
+          PROCESSED_BUCKET: !Ref ProcessedEmailsBucket
+          RESPONDER_FUNCTION: !GetAtt ResponderFunction.Arn
+          SCHRUTE_EMAIL: !Ref SchruteEmail
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MessagesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ThreadsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SpeechActsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ActivationLogTable
+        - S3ReadPolicy:
+            BucketName: !Ref ProcessedEmailsBucket
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ResponderFunction
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref AnthropicApiKeySecret
+
+  ResponderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-responder'
+      CodeUri: dist/
+      Handler: lambdas/responder/handler.handler
+      MemorySize: 1024
+      Timeout: 120
+      Environment:
+        Variables:
+          ANTHROPIC_API_KEY_SECRET: !Ref AnthropicApiKeySecret
+          MESSAGES_TABLE: !Ref MessagesTable
+          THREADS_TABLE: !Ref ThreadsTable
+          SPEECH_ACTS_TABLE: !Ref SpeechActsTable
+          ACTIVATION_LOG_TABLE: !Ref ActivationLogTable
+          PROCESSED_BUCKET: !Ref ProcessedEmailsBucket
+          PERSONALITIES_BUCKET: !Ref PersonalitiesBucket
+          SES_FROM_EMAIL: !Ref SchruteEmail
+          CONTEXT_WINDOW_SIZE: !Ref ContextWindowSize
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MessagesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ThreadsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SpeechActsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ActivationLogTable
+        - S3ReadPolicy:
+            BucketName: !Ref ProcessedEmailsBucket
+        - S3ReadPolicy:
+            BucketName: !Ref PersonalitiesBucket
+        - S3ReadPolicy:
+            BucketName: !Ref KnowledgeBucket
+        - S3ReadPolicy:
+            BucketName: !Ref SkillsBucket
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref AnthropicApiKeySecret
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: '*'
+              Condition:
+                StringEquals:
+                  ses:FromAddress: !Ref SchruteEmail
+
+  # ============================================================================
+  # SES Configuration
+  # ============================================================================
+
+  # Note: SES email receiving rules must be configured manually or via separate stack
+  # This requires domain verification and receipt rule set creation
+
+  # ============================================================================
+  # CloudWatch Log Groups
+  # ============================================================================
+
+  IngestLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${IngestFunction}'
+      RetentionInDays: 30
+
+  ProcessorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${ProcessorFunction}'
+      RetentionInDays: 30
+
+  ResponderLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${ResponderFunction}'
+      RetentionInDays: 30
+
+# ============================================================================
+# Outputs
+# ============================================================================
+
+Outputs:
+  RawEmailsBucketName:
+    Description: S3 bucket for raw emails from SES
+    Value: !Ref RawEmailsBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-RawEmailsBucket'
+
+  ProcessedEmailsBucketName:
+    Description: S3 bucket for processed emails (JSON)
+    Value: !Ref ProcessedEmailsBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-ProcessedEmailsBucket'
+
+  KnowledgeBucketName:
+    Description: S3 bucket for knowledge store
+    Value: !Ref KnowledgeBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-KnowledgeBucket'
+
+  IngestFunctionArn:
+    Description: ARN of ingest Lambda function
+    Value: !GetAtt IngestFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-IngestFunctionArn'
+
+  ProcessorFunctionArn:
+    Description: ARN of processor Lambda function
+    Value: !GetAtt ProcessorFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-ProcessorFunctionArn'
+
+  ResponderFunctionArn:
+    Description: ARN of responder Lambda function
+    Value: !GetAtt ResponderFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-ResponderFunctionArn'
+
+  SchruteEmailAddress:
+    Description: Email address for Schrute
+    Value: !Ref SchruteEmail
+
+  NextSteps:
+    Description: Manual steps required after deployment
+    Value: |
+      1. Verify your domain in SES (if not already done)
+      2. Create SES receipt rule to write emails to RawEmailsBucket
+      3. Upload personality configs to PersonalitiesBucket
+      4. Upload initial knowledge to KnowledgeBucket
+      5. Send a test email to Schrute!

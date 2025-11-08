@@ -35,6 +35,41 @@ export const EmailThreadSchema = z.object({
 export type EmailThread = z.infer<typeof EmailThreadSchema>
 
 // ============================================================================
+// Storage Layer Types (DynamoDB/S3)
+// ============================================================================
+
+/**
+ * Message type for storage layer (DynamoDB)
+ * Simpler than Email type for database efficiency
+ */
+export interface Message {
+  message_id: string
+  thread_id: string
+  from_email: string
+  from_name?: string
+  to: string[] // Just email addresses
+  cc?: string[]
+  subject: string
+  timestamp: string
+  in_reply_to?: string
+  s3_key?: string // Path to full email in S3
+  participants: string[] // All email addresses from/to/cc
+}
+
+/**
+ * Thread metadata for storage layer
+ */
+export interface Thread {
+  thread_id: string
+  subject: string
+  participants: string[] // All email addresses that have seen this thread
+  created_at: string
+  updated_at: string
+  message_count: number
+  last_message_id?: string
+}
+
+// ============================================================================
 // Speech Act Types
 // ============================================================================
 

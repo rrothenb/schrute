@@ -1,7 +1,9 @@
 # Schrute - AI Coordination Assistant Framework
 
 ## 🎯 Project Context
-AI coordination assistant using email interface. Phase 1 prototype is **COMPLETE**:
+AI coordination assistant using email interface.
+
+**Phase 1 (COMPLETE):** Local prototype with CLI
 - ✅ Speech act detection from emails
 - ✅ Natural language queries about detected speech acts
 - ✅ Privacy-respecting information access
@@ -9,13 +11,23 @@ AI coordination assistant using email interface. Phase 1 prototype is **COMPLETE
 - ✅ Hybrid memory system for efficient context management
 - ✅ MCP integration for extensibility (Knowledge Store + Dynamic Skills)
 - ✅ Interactive CLI for testing and demonstration
-- Foundation for future action-taking capabilities
+
+**Phase 2 (COMPLETE):** Production AWS deployment
+- ✅ Real email integration via Amazon SES
+- ✅ Serverless architecture with Lambda functions
+- ✅ Scalable storage (S3 + DynamoDB)
+- ✅ Enhanced context assembly with relevance ranking
+- ✅ Secure secrets management
+- ✅ Comprehensive deployment automation via AWS SAM
+- ✅ Backward compatible with Phase 1 local testing
 
 ## 📚 Tech Stack
 - Runtime: Node.js 18+
 - Language: TypeScript 5 (strict mode)
-- Cloud: AWS (SES, DynamoDB) - deployment via SAM when ready (Phase 2)
+- Cloud: AWS (SES, Lambda, DynamoDB, S3, Secrets Manager)
+- Deployment: AWS SAM (Serverless Application Model)
 - LLM: Anthropic Claude API (claude-3-5-sonnet-20241022)
+- Email: mailparser for EML format parsing
 - MCP: Model Context Protocol SDK for extensibility
 - Testing: Jest with TypeScript + ESM (93 tests: 37 unit, 8 integration, 48 live API)
 
@@ -26,27 +38,33 @@ schrute/
 ├── src/
 │   ├── lib/                          # Core libraries
 │   │   ├── types/                    # Shared TypeScript types
-│   │   ├── email/                    # Email parsing, threading
+│   │   ├── email/                    # Email parsing, threading, EML parser
 │   │   ├── speech-acts/              # Speech act detection & storage
 │   │   ├── privacy/                  # Participant tracking & filtering
 │   │   ├── query/                    # Query handling & context assembly
 │   │   ├── personality/              # Personality system
 │   │   ├── activation/               # Activation decision logic
-│   │   ├── memory/                   # Hybrid memory management
+│   │   ├── memory/                   # Hybrid memory + context assembler
 │   │   ├── claude/                   # Claude API client wrapper
+│   │   ├── storage/                  # Storage abstraction (S3, DynamoDB)
 │   │   └── mcp/                      # MCP client manager
 │   ├── mcp-servers/                  # MCP server implementations
 │   │   ├── knowledge-store/          # Markdown-based knowledge storage
 │   │   ├── dynamic-skills/           # Runtime skill creation system
 │   │   └── mock-skills/              # Example mock services
 │   ├── cli/                          # Interactive CLI tool
-│   └── lambdas/                      # Lambda functions (future)
-├── events/                           # Mock email YAML files
+│   └── lambdas/                      # Lambda function handlers
+│       ├── ingest/                   # Email ingestion handler
+│       ├── processor/                # Speech act + activation handler
+│       └── responder/                # Response generation handler
+├── events/                           # Mock email YAML files (local testing)
 ├── personalities/                    # Personality configurations
 ├── knowledge/                        # Knowledge store markdown files
 ├── skills/                           # Dynamic skills JSON storage
 ├── dist/                             # Build output (gitignored)
-└── template.yaml                     # AWS SAM template (future)
+├── template.yaml                     # AWS SAM template (Phase 2)
+├── ARCHITECTURE-PHASE2.md            # Phase 2 architecture documentation
+└── DEPLOYMENT.md                     # Deployment guide
 ```
 
 ## 📝 TypeScript Standards
@@ -99,6 +117,66 @@ schrute/
 - **Conservative:** When uncertain, restrict access
 
 Phase 1 is purely prototyping: No lambdas, no SES, local execution only
+
+## 🏗️ Phase 2 Architecture (Production AWS)
+
+### AWS Serverless Pipeline
+
+**Email Flow:**
+```
+SES receives email
+    ↓
+S3 (raw EML)
+    ↓ S3 event trigger
+Ingest Lambda → Parse EML → Store in DynamoDB + S3
+    ↓ async invoke
+Processor Lambda → Detect speech acts → Check activation
+    ↓ async invoke (if should respond)
+Responder Lambda → Assemble context → Generate response → Send via SES
+```
+
+**Storage Architecture:**
+- **S3 Buckets:**
+  - `emails-raw`: Raw EML files from SES (90-day retention)
+  - `emails-processed`: Parsed JSON (90-day retention)
+  - `knowledge`: Markdown knowledge entries (permanent)
+  - `personalities`: Personality YAML configs (permanent)
+  - `skills`: Dynamic skill definitions (permanent)
+
+- **DynamoDB Tables:**
+  - `threads`: Thread metadata, participants
+  - `messages`: Message index with GSI on thread_id-timestamp
+  - `speech-acts`: Speech act index with GSIs on thread_id and type
+  - `activation-log`: Record of activation decisions
+
+**Lambda Functions:**
+1. **Ingest** (512MB, 30s): Parse emails, store metadata
+2. **Processor** (1024MB, 60s): Detect speech acts, decide activation
+3. **Responder** (1024MB, 120s): Generate and send responses
+
+**Enhanced Context Assembly:**
+- Sliding window: Recent N messages (full, default 10)
+- Older messages: Summarized for context
+- Relevance boosting: Messages with speech acts prioritized
+- MCP skill relevance: Keyword-based boosting
+- Token budget management: ~46K tokens for context
+- Graceful degradation: Trim oldest summaries if needed
+
+**Security:**
+- Secrets Manager for Anthropic API key
+- IAM roles with least privilege
+- S3 encryption at rest (AES-256)
+- DynamoDB encryption at rest
+- CloudWatch Logs for audit trail
+
+**Deployment:**
+- AWS SAM for infrastructure as code
+- One-command deployment: `npm run deploy`
+- Parameterized configuration
+- CloudFormation stack management
+
+See **ARCHITECTURE-PHASE2.md** for detailed architecture documentation.
+See **DEPLOYMENT.md** for step-by-step deployment guide.
 
 ## 📧 Email YAML Format
 
@@ -341,7 +419,25 @@ See **TESTING.md** for comprehensive testing documentation including:
 - `dist/` directory (build output)
 
 ## 💡 Development Approach
-- Phase 1 is complete and functional
+
+**Current State:**
+- ✅ Phase 1: Complete and functional (local CLI testing)
+- ✅ Phase 2: Complete and ready for deployment (AWS production)
+
+**Key Principles:**
 - Focus on modular, production-quality code
 - MCP provides extensibility without core changes
-- Ready for Phase 2: AWS deployment, real email integration
+- Storage abstraction allows local and cloud operation
+- Backward compatible: CLI still works with YAML files
+- Forward compatible: Lambda handlers use same core libraries
+
+**Development Modes:**
+- **Local Development:** Use CLI with YAML mock emails (`npm run dev`)
+- **Production:** Deploy to AWS with SAM (`npm run deploy`)
+- **Testing:** Unit tests work without AWS (`npm test:unit`)
+
+**Next Steps (Future Phases):**
+- Vector embeddings for semantic search
+- Enhanced MCP skill discovery
+- Web dashboard for monitoring
+- Multi-region deployment

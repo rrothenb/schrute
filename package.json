@@ -6,15 +6,19 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "build:lambda": "tsc && cp package.json dist/ && cd dist && npm install --production",
     "dev": "tsx src/cli/index.ts",
     "cli": "node dist/cli/index.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathIgnorePatterns=.live.test.ts --testPathIgnorePatterns=integration",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "deploy": "npm run build:lambda && sam build && sam deploy --guided",
+    "deploy:quick": "npm run build:lambda && sam build && sam deploy"
   },
   "keywords": [
     "ai",
@@ -28,15 +32,26 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",
+    "@aws-sdk/client-dynamodb": "^3.705.0",
+    "@aws-sdk/client-lambda": "^3.705.0",
+    "@aws-sdk/client-s3": "^3.705.0",
+    "@aws-sdk/client-secrets-manager": "^3.705.0",
+    "@aws-sdk/client-ses": "^3.705.0",
+    "@aws-sdk/util-dynamodb": "^3.705.0",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "dotenv": "^17.2.3",
+    "mailparser": "^3.7.1",
+    "uuid": "^11.0.5",
     "yaml": "^2.6.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@jest/globals": "^30.2.0",
+    "@types/aws-lambda": "^8.10.145",
     "@types/jest": "^30.0.0",
+    "@types/mailparser": "^3.4.4",
     "@types/node": "^20.17.10",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.18.2",
     "@typescript-eslint/parser": "^8.18.2",
     "eslint": "^8.57.1",
