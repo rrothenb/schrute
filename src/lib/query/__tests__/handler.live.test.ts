@@ -11,16 +11,16 @@ import { QueryRequest, EmailAddress, KnowledgeCategory } from '~/lib/types/index
  * Live API Tests for Query Handler
  *
  * These tests make actual calls to the Anthropic Claude API.
- * They are skipped if ANTHROPIC_API_KEY is not set.
+ * They are skipped if CLAUDE_API_KEY is not set.
  *
  * To run these tests:
- *   export ANTHROPIC_API_KEY=sk-ant-...
+ *   export CLAUDE_API_KEY=sk-ant-...
  *   npm test -- handler.live.test.ts
  *
  * Estimated API costs per test run: ~$0.05-0.10
  */
 
-const hasApiKey = !!process.env.ANTHROPIC_API_KEY
+const hasApiKey = !!process.env.CLAUDE_API_KEY
 const describeIfApiKey = hasApiKey ? describe : describe.skip
 
 describeIfApiKey('Query Handler - Live API Tests', () => {
@@ -289,5 +289,5 @@ describeIfApiKey('Query Handler - Live API Tests', () => {
 })
 
 if (!hasApiKey) {
-  console.log('⚠️  Skipping Query Handler live API tests - ANTHROPIC_API_KEY not set')
+  console.log('⚠️  Skipping Query Handler live API tests - CLAUDE_API_KEY not set')
 }

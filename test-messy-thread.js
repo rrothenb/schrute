@@ -171,8 +171,8 @@ async function runTests() {
 }
 
 // Check for API key
-if (!process.env.ANTHROPIC_API_KEY) {
-  console.error('❌ ANTHROPIC_API_KEY not set. Please set it in .env file.')
+if (!process.env.CLAUDE_API_KEY) {
+  console.error('❌ CLAUDE_API_KEY not set. Please set it in .env file.')
   process.exit(1)
 }
 

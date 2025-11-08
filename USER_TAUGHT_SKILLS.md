@@ -52,7 +52,7 @@ Next time: Query succeeds with new skill
 npm run build
 
 # Set API key
-export ANTHROPIC_API_KEY=sk-ant-...
+export CLAUDE_API_KEY=sk-ant-...
 
 # Start CLI
 npm run cli

@@ -204,7 +204,7 @@
 ```bash
 # 1. Set up
 cp .env.example .env
-# Add ANTHROPIC_API_KEY=sk-ant-...
+# Add CLAUDE_API_KEY=sk-ant-...
 
 # 2. Build
 npm install

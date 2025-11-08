@@ -73,7 +73,7 @@ npm test -- invoker.live.test.ts
 
 ### Running Without API Key
 
-If `ANTHROPIC_API_KEY` is not set, live API tests will be skipped automatically:
+If `CLAUDE_API_KEY` is not set, live API tests will be skipped automatically:
 
 ```bash
 # This will run unit tests and basic integration tests
@@ -83,10 +83,10 @@ npm test
 
 Output will show:
 ```
-⚠️  Skipping Query Handler live API tests - ANTHROPIC_API_KEY not set
-⚠️  Skipping Activation Decider live API tests - ANTHROPIC_API_KEY not set
-⚠️  Skipping Memory Summarizer live API tests - ANTHROPIC_API_KEY not set
-⚠️  Skipping Dynamic Skills Invoker live API tests - ANTHROPIC_API_KEY not set
+⚠️  Skipping Query Handler live API tests - CLAUDE_API_KEY not set
+⚠️  Skipping Activation Decider live API tests - CLAUDE_API_KEY not set
+⚠️  Skipping Memory Summarizer live API tests - CLAUDE_API_KEY not set
+⚠️  Skipping Dynamic Skills Invoker live API tests - CLAUDE_API_KEY not set
 ```
 
 ### Running With API Key
@@ -95,7 +95,7 @@ Set your API key to run the full test suite:
 
 ```bash
 # Set API key for current session
-export ANTHROPIC_API_KEY=sk-ant-your-key-here
+export CLAUDE_API_KEY=sk-ant-your-key-here
 
 # Run full test suite including live API tests
 npm test
@@ -230,7 +230,7 @@ test-with-api:
     - run: npm install
     - run: npm test              # Full test suite including live API
       env:
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
 ```
 
 **Best Practice:** Run unit/integration tests on every commit, run live API tests on:
@@ -260,7 +260,7 @@ describe('MyModule', () => {
 import { describe, it, expect } from '@jest/globals'
 import { myApiFunction } from '../myModule.js'
 
-const hasApiKey = !!process.env.ANTHROPIC_API_KEY
+const hasApiKey = !!process.env.CLAUDE_API_KEY
 const describeIfApiKey = hasApiKey ? describe : describe.skip
 
 describeIfApiKey('MyModule - Live API Tests', () => {
@@ -272,7 +272,7 @@ describeIfApiKey('MyModule - Live API Tests', () => {
 })
 
 if (!hasApiKey) {
-  console.log('⚠️  Skipping MyModule live API tests - ANTHROPIC_API_KEY not set')
+  console.log('⚠️  Skipping MyModule live API tests - CLAUDE_API_KEY not set')
 }
 ```
 

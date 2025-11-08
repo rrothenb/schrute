@@ -34,7 +34,7 @@ npm install
 
 # Set up environment variables
 cp .env.example .env
-# Edit .env and add: ANTHROPIC_API_KEY=sk-ant-...
+# Edit .env and add: CLAUDE_API_KEY=sk-ant-...
 
 # Build the project
 npm run build
@@ -359,11 +359,11 @@ npm test -- --watch
 
 ### Running Live API Tests
 
-Live API tests require an Anthropic API key. They are automatically skipped if `ANTHROPIC_API_KEY` is not set:
+Live API tests require an Anthropic API key. They are automatically skipped if `CLAUDE_API_KEY` is not set:
 
 ```bash
 # Set API key to run full test suite
-export ANTHROPIC_API_KEY=sk-ant-your-key-here
+export CLAUDE_API_KEY=sk-ant-your-key-here
 npm test
 
 # Run specific test suite

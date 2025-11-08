@@ -68,9 +68,9 @@ describe('Integration Tests', () => {
     const detector = createSpeechActDetector()
     const store = createSpeechActStore()
 
-    // Note: This requires ANTHROPIC_API_KEY to be set
+    // Note: This requires CLAUDE_API_KEY to be set
     // Skip if not available
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.CLAUDE_API_KEY) {
       console.log('Skipping speech act detection - no API key')
       return
     }
@@ -132,7 +132,7 @@ describe('Integration Tests', () => {
     const emails = await loadEmailsFromYaml(filePath)
 
     // Skip if no API key
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.CLAUDE_API_KEY) {
       console.log('Skipping end-to-end test - no API key')
       return
     }
