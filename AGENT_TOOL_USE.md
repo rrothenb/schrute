@@ -239,7 +239,7 @@ schrute> mcp tools
 
 This shows the tools are discovered and registered correctly.
 
-To test the full workflow, you need `ANTHROPIC_API_KEY` set.
+To test the full workflow, you need `CLAUDE_API_KEY` set.
 
 ## Next Steps
 

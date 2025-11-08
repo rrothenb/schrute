@@ -23,7 +23,7 @@ cp .env.example .env
 
 Your `.env` file should look like:
 ```
-ANTHROPIC_API_KEY=sk-ant-api03-...your-key-here...
+CLAUDE_API_KEY=sk-ant-api03-...your-key-here...
 ```
 
 ### 3. Run Schrute

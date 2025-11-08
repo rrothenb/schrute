@@ -10,7 +10,7 @@ export class SkillInvoker {
 
   constructor(apiKey?: string) {
     this.client = new Anthropic({
-      apiKey: apiKey || process.env.ANTHROPIC_API_KEY,
+      apiKey: apiKey || process.env.CLAUDE_API_KEY,
     })
   }
 

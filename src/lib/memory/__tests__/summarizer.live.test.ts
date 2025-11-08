@@ -8,16 +8,16 @@ import { Email } from '~/lib/types/index.js'
  * Live API Tests for Memory Summarizer
  *
  * These tests make actual calls to the Anthropic Claude API.
- * They are skipped if ANTHROPIC_API_KEY is not set.
+ * They are skipped if CLAUDE_API_KEY is not set.
  *
  * To run these tests:
- *   export ANTHROPIC_API_KEY=sk-ant-...
+ *   export CLAUDE_API_KEY=sk-ant-...
  *   npm test -- summarizer.live.test.ts
  *
  * Estimated API costs per test run: ~$0.03-0.05
  */
 
-const hasApiKey = !!process.env.ANTHROPIC_API_KEY
+const hasApiKey = !!process.env.CLAUDE_API_KEY
 const describeIfApiKey = hasApiKey ? describe : describe.skip
 
 describeIfApiKey('Memory Summarizer - Live API Tests', () => {
@@ -244,5 +244,5 @@ describeIfApiKey('Memory Summarizer - Live API Tests', () => {
 })
 
 if (!hasApiKey) {
-  console.log('⚠️  Skipping Memory Summarizer live API tests - ANTHROPIC_API_KEY not set')
+  console.log('⚠️  Skipping Memory Summarizer live API tests - CLAUDE_API_KEY not set')
 }

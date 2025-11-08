@@ -4,7 +4,7 @@
 
 ```bash
 # 1. Ensure API key is set
-export ANTHROPIC_API_KEY=sk-ant-...
+export CLAUDE_API_KEY=sk-ant-...
 
 # 2. Build the project
 npm run build

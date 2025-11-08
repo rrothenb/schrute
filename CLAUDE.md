@@ -315,7 +315,7 @@ npm install
 
 # Set up environment
 cp .env.example .env
-# Add: ANTHROPIC_API_KEY=sk-ant-...
+# Add: CLAUDE_API_KEY=sk-ant-...
 
 # Build
 npm run build
@@ -391,7 +391,7 @@ npm test
 npm test -- parser.test.ts store.test.ts tracker.test.ts
 
 # Run live API tests (48 tests, requires API key)
-export ANTHROPIC_API_KEY=sk-ant-...
+export CLAUDE_API_KEY=sk-ant-...
 npm test -- *.live.test.ts
 ```
 
@@ -401,7 +401,7 @@ npm test -- *.live.test.ts
 - **Live API Tests (48):** Query handler, activation decider, memory summarizer, dynamic skills invoker
 
 **Key Features:**
-- Automatic skipping of API tests when `ANTHROPIC_API_KEY` not set
+- Automatic skipping of API tests when `CLAUDE_API_KEY` not set
 - Estimated API cost per full run: ~$0.17-0.32
 - Jest with TypeScript + ESM support
 - Module name mapping for `~/*` path alias
