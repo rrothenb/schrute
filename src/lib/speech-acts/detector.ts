@@ -1,5 +1,5 @@
 import { getClaudeClient } from '~/lib/claude/index.js'
-import { Email, SpeechAct, SpeechActType } from '~/lib/types/index.js'
+import type { Email, SpeechAct, SpeechActType } from '~/lib/types/index.js'
 import { getEmailParticipants } from '~/lib/email/index.js'
 import { randomUUID } from 'crypto'
 
@@ -8,20 +8,6 @@ interface DetectedSpeechAct {
   content: string
   confidence: number
   metadata?: Record<string, unknown>
-}
-
-// Mapping from string to enum values - using string literals to avoid module loading issues
-const SPEECH_ACT_TYPE_MAP: Record<string, SpeechActType> = {
-  REQUEST: 'request' as SpeechActType,
-  QUESTION: 'question' as SpeechActType,
-  COMMITMENT: 'commitment' as SpeechActType,
-  DECISION: 'decision' as SpeechActType,
-  STATEMENT: 'statement' as SpeechActType,
-  GREETING: 'greeting' as SpeechActType,
-  ACKNOWLEDGMENT: 'acknowledgment' as SpeechActType,
-  SUGGESTION: 'suggestion' as SpeechActType,
-  OBJECTION: 'objection' as SpeechActType,
-  AGREEMENT: 'agreement' as SpeechActType,
 }
 
 const SPEECH_ACT_DETECTION_PROMPT = `You are an expert at analyzing email communication and identifying speech acts.
@@ -105,8 +91,20 @@ export class SpeechActDetector {
 
   private mapSpeechActType(typeStr: string): SpeechActType {
     const normalized = typeStr.toUpperCase()
-    // Use the pre-defined mapping to avoid runtime enum issues
-    return SPEECH_ACT_TYPE_MAP[normalized] || ('statement' as SpeechActType)
+    // Map to string literals directly to avoid enum runtime issues
+    const typeMap: Record<string, string> = {
+      'REQUEST': 'request',
+      'QUESTION': 'question',
+      'COMMITMENT': 'commitment',
+      'DECISION': 'decision',
+      'STATEMENT': 'statement',
+      'GREETING': 'greeting',
+      'ACKNOWLEDGMENT': 'acknowledgment',
+      'SUGGESTION': 'suggestion',
+      'OBJECTION': 'objection',
+      'AGREEMENT': 'agreement',
+    }
+    return (typeMap[normalized] || 'statement') as SpeechActType
   }
 }
 
