@@ -1,0 +1,804 @@
+# Smykowski: AI Project Coordinator for GitHub
+
+> *"What would you say... you do here?"*  
+> *"I take the specs from the customers and bring them down to the engineers."*
+
+**Smykowski** (Tom S., Tom Smykowski) is a specific deployment of the Schrute framework designed to act as an AI project coordinator for software development teams using GitHub. Named after the character from *Office Space*, Tom handles the mundane coordination tasks that keep projects running smoothly—without trying to make strategic decisions or act as a domain expert.
+
+## Philosophy: Assistant, Not Expert
+
+Tom operates under the **"micro-intern" philosophy**:
+
+✅ **What Tom Does Well:**
+- Follows explicit instructions reliably
+- Never forgets commitments or deadlines
+- Works 24/7 without complaining
+- Handles repetitive coordination tasks without error
+- Tracks who's responsible for what
+- Maintains institutional memory in the wiki
+
+❌ **What Tom Does NOT Do:**
+- Make strategic or technical decisions
+- Exercise independent judgment
+- Interpret vague requirements
+- Assess code quality or architecture
+- Prioritize features without guidance
+- "Read between the lines"
+
+**Tom's role:** Process coordinator who knows how your team works, not an expert who evaluates technical merit.
+
+---
+
+## Core Capabilities
+
+### 1. Natural Communication (Email-First)
+
+Tom communicates via email as if he were a remote team member—no special syntax, no configuration UI, no separate tool to learn.
+
+**How It Works:**
+- Send emails to `tom@smykowski.work` (or your configured address)
+- Tom responds with natural language
+- All coordination happens through normal email conversations
+- Tom can be CC'd on team emails to observe and extract action items
+
+**Example Interaction:**
+```
+From: alice@team.com
+To: tom@smykowski.work
+Subject: Sprint Planning Notes
+
+Hi Tom,
+
+Here are the notes from today's sprint planning:
+
+- Bob will implement the authentication flow by Friday
+- Carol needs to review the API design by Wednesday
+- We decided to postpone the mobile app until Q2
+
+Can you track these?
+
+Thanks,
+Alice
+```
+
+```
+From: tom@smykowski.work
+To: alice@team.com
+Subject: Re: Sprint Planning Notes
+
+Hi Alice,
+
+Got it! I've created the following GitHub issues:
+
+- #123: Implement authentication flow (assigned to Bob, due Friday)
+- #124: Review API design (assigned to Carol, due Wednesday)
+
+I've also updated the project wiki to reflect the Q2 postponement 
+of the mobile app.
+
+I'll check in with Bob and Carol on Thursday if I don't see updates.
+
+Tom
+```
+
+---
+
+## GitHub Integration Features
+
+### GitHub Issues Management
+
+**Automatic Issue Creation from Emails:**
+- Extracts action items from meeting notes
+- Creates properly formatted GitHub Issues
+- Assigns to appropriate team members
+- Sets due dates based on context
+- Adds relevant labels automatically
+
+**Issue Tracking & Reminders:**
+- Monitors issue status and age
+- Sends reminders before deadlines
+- Escalates stale issues to team leads
+- Tracks dependencies between issues
+- Updates issues based on email replies
+
+**Smart Assignment:**
+- Learns team member expertise from past work
+- Suggests appropriate assignees
+- Balances workload across the team
+- Handles reassignments during vacations
+- Tracks who's responsible for what
+
+### GitHub Projects Integration
+
+**Automated Board Management:**
+- Creates and updates project boards
+- Moves cards based on issue status
+- Tracks sprint progress
+- Generates burndown data
+- Syncs milestones with board views
+
+**Custom Fields & Tracking:**
+- Deadline tracking via custom fields
+- Responsibility chains
+- Dependency mapping
+- Priority management
+- Status updates
+
+**Sprint Management:**
+- Tracks sprint boundaries
+- Monitors velocity
+- Identifies bottlenecks
+- Generates sprint reports
+- Facilitates retrospectives
+
+### GitHub Wiki Documentation
+
+**Process Documentation:**
+- Maintains team processes in wiki pages
+- Documents decision history
+- Records responsibility matrices
+- Keeps onboarding guides current
+- Links related documentation
+
+**Living Documentation:**
+- "Team Status" page with current work
+- Project roadmap based on closed issues
+- "Who's Working on What" summaries
+- Process improvement notes
+- Meeting decision logs
+
+**Automated Updates:**
+- Updates wiki after major decisions
+- Reflects current team structure
+- Documents process changes
+- Archives completed projects
+- Maintains change history
+
+### GitHub Discussions Integration
+
+**Coordination Hub:**
+- Monitors Discussions for action items
+- Extracts commitments from conversations
+- Links Discussions to related Issues
+- Creates follow-up tasks from questions
+- Documents decisions made in Discussions
+
+**Discussion Categories Tom Uses:**
+- **Decisions**: Major project decisions and rationale
+- **Meeting Notes**: Automated summaries with links to created Issues
+- **Process Docs**: Team workflows and best practices
+- **Q&A**: Questions that need follow-up
+- **Onboarding**: New team member resources
+
+### Pull Request Management
+
+**PR Tracking:**
+- Monitors aging PRs
+- Sends review reminders
+- Escalates after configured delays
+- Tracks reviewer assignments
+- Notifies on merge conflicts
+
+**Review Coordination:**
+- Assigns reviewers based on expertise
+- Balances review load
+- Sends polite reminder comments
+- Tracks review SLAs
+- Reports on PR velocity
+
+### GitHub Actions Integration
+
+**Event-Driven Responses:**
+- Responds to issue/PR events via webhooks
+- Triggers on scheduled intervals
+- Runs periodic health checks
+- Generates automated reports
+- Executes cleanup tasks
+
+**Automated Workflows:**
+- Stale issue detection
+- Project board updates
+- Status report generation
+- Deadline reminders
+- Team notifications
+
+---
+
+## Core Coordination Workflows
+
+### 1. Meeting Follow-Up Automation
+
+**Problem Solved:**
+Meeting notes contain action items, but they get lost or forgotten. Nobody's sure who owns what or when things are due.
+
+**Tom's Workflow:**
+1. Receive meeting notes via email
+2. Parse for action items and commitments
+3. Create GitHub Issues for each action
+4. Assign to appropriate team members
+5. Set realistic deadlines
+6. Cross-reference back to meeting notes (Discussion or wiki)
+7. Send confirmations to attendees
+8. Track progress and send reminders
+
+**Example:**
+```
+Email Subject: "Sprint Planning - Oct 27"
+
+Tom extracts:
+- "Bob will implement auth" → Issue #123, assigned to Bob
+- "Carol to review API" → Issue #124, assigned to Carol
+- "Deploy by Friday" → Milestone with Friday deadline
+
+Tom creates Discussion post summarizing decisions
+Tom sends confirmation email with links to Issues
+Tom schedules reminder checks for Thursday
+```
+
+### 2. Deadline & Commitment Tracking
+
+**Problem Solved:**
+People commit to deadlines in emails or meetings, but there's no central tracking. Things slip without anyone noticing until it's too late.
+
+**Tom's Workflow:**
+1. Detect commitments in emails/Discussions
+2. Extract who, what, when
+3. Create or update GitHub Issues
+4. Set deadline reminders
+5. Check status before deadlines
+6. Send polite reminders if no updates
+7. Escalate if deadlines pass
+8. Document slippages for retrospectives
+
+**Smart Features:**
+- Distinguishes "this week" from "by Friday"
+- Understands "by EOD" vs "by end of month"
+- Adjusts for weekends and holidays
+- Learns team's typical response times
+- Adapts reminder timing to urgency
+
+### 3. Responsibility Handoff Management
+
+**Problem Solved:**
+When team members go on vacation or leave, their responsibilities fall through the cracks. The replacement doesn't know what they're covering.
+
+**Tom's Workflow:**
+1. Team member notifies Tom of absence
+2. Tom identifies all assigned Issues and PRs
+3. Tom checks team capacity and expertise
+4. Tom suggests reassignments
+5. Tom briefs the replacement
+6. Tom creates Discussion post about changes
+7. Tom schedules reminder to reverse changes
+8. Tom restores original assignments on return
+
+**Example:**
+```
+Alice: "Tom, I'm on vacation next week. Please reassign my work."
+
+Tom:
+- Finds Alice's 5 open Issues
+- Finds Alice as reviewer on 3 PRs
+- Suggests Bob for Issues #100-102 (backend work)
+- Suggests Carol for Issues #103-104 (frontend work)
+- Suggests Ted as PR reviewer
+- Creates Discussion: "Alice's vacation handoff (Oct 30 - Nov 6)"
+- Briefs each person individually
+- Schedules Nov 7 to restore assignments
+```
+
+### 4. PR Review Coordination
+
+**Problem Solved:**
+PRs sit unreviewed for days. Reviewers don't know what needs attention. Authors don't know who to ping.
+
+**Tom's Workflow:**
+1. PR opened → Tom suggests reviewers
+2. After 24 hours → Polite reminder comment
+3. After 48 hours → DM to reviewer
+4. After 72 hours → Escalate to team lead
+5. Track review patterns to improve suggestions
+6. Balance reviewer workload
+7. Generate weekly PR review metrics
+
+**Smart Features:**
+- Learns who reviews what types of code
+- Avoids overloading busy reviewers
+- Respects team's preferred review SLAs
+- Adjusts urgency based on labels/milestones
+- Celebrates fast review turnarounds
+
+### 5. Workload Balancing
+
+**Problem Solved:**
+Some team members are overloaded while others have capacity. Nobody wants to be "that person" who says they're overwhelmed.
+
+**Tom's Workflow:**
+1. Track assignments per team member
+2. Calculate relative workload
+3. Flag significant imbalances to team lead
+4. Suggest specific reassignments
+5. Handle the awkward "can you take this?" conversation
+6. Update wiki with current workload status
+7. Generate weekly balance reports
+
+**Example:**
+```
+Tom notices:
+- Alice: 12 open Issues
+- Bob: 2 open Issues
+- Carol: 5 open Issues
+
+Tom emails team lead:
+"Alice's workload is 2x the team average. Suggest reassigning 
+Issues #200-203 to Bob (all are backend work he's familiar with)."
+
+Tom handles the actual reassignment and notifications
+```
+
+### 6. Status Synthesis & Reporting
+
+**Problem Solved:**
+Managers ask "What's the status?" and everyone scrambles to update tickets. Half the team doesn't respond. Manager pieces together incomplete info.
+
+**Tom's Workflow:**
+1. Manager asks Tom for project status
+2. Tom reads all Issues, PRs, comments
+3. Tom synthesizes: completion %, blockers, risks
+4. Tom provides summary with evidence links
+5. Tom identifies what needs human attention
+6. Tom suggests what to discuss in standup
+
+**Example:**
+```
+Manager: "Tom, what's the status of Project X?"
+
+Tom replies:
+"Project X is 70% complete (14/20 issues closed).
+
+✅ Completed: Authentication, API design, database schema
+🚧 In Progress: Frontend (Carol, 60% done)
+⚠️  Blockers:
+  - Issue #150: Waiting on external API keys (pending since Oct 25)
+  - Issue #152: Merge conflict needs resolution
+
+⏰ At Risk:
+  - Issue #148: Bob's PR has been in review for 4 days
+
+Next Actions:
+  - Follow up with vendor on API keys
+  - Ping reviewers on Issue #148
+
+Sprint deadline: Nov 1 (4 days) - Achievable if blockers resolve"
+```
+
+### 7. Process Discovery & Optimization
+
+**Problem Solved:**
+Teams don't notice their own workflow bottlenecks. Process improvements don't happen because nobody's tracking metrics.
+
+**Tom's Workflow:**
+1. Analyze GitHub Project board flow
+2. Identify patterns (e.g., "PRs wait 3 days for review")
+3. Create Discussion with suggested improvements
+4. Track metrics after changes implemented
+5. Report on improvement results
+6. Document successful process changes in wiki
+
+**Example:**
+```
+Tom creates Discussion:
+"I've noticed PRs typically wait 3 days for review, which is 
+blocking feature completion. 
+
+Pattern: Most PRs are created Mon-Wed, but reviews happen Thu-Fri.
+
+Suggested improvement: Rotating daily review duty, or PR review 
+as first task each morning.
+
+Would this work for the team?"
+
+[Team discusses, implements rotating review duty]
+
+Tom tracks: Average PR review time drops to 1.2 days
+Tom documents: "PR Review Process" wiki page with new workflow
+```
+
+### 8. Dependency Tracking
+
+**Problem Solved:**
+Issues are blocked by other issues, but nobody's tracking dependencies. Work gets started before blockers are resolved.
+
+**Tom's Workflow:**
+1. Detect "blocked by" references in Issues
+2. Create dependency links
+3. Notify when blockers are resolved
+4. Update dependent Issue status
+5. Visualize dependency chains
+6. Warn about circular dependencies
+7. Generate dependency reports
+
+### 9. Sprint Retrospective Support
+
+**Problem Solved:**
+Retrospectives are based on vague memories. Nobody has concrete data on what happened during the sprint.
+
+**Tom's Workflow:**
+1. Throughout sprint: Track velocity, completion %
+2. Monitor what went well (fast PR reviews, early completions)
+3. Monitor what didn't (missed deadlines, blocked work)
+4. Generate retrospective data Discussion
+5. Include metrics: velocity, cycle time, issue age
+6. Highlight patterns for team discussion
+7. Document action items from retro
+
+---
+
+## Integration with Team Workflows
+
+### Onboarding New Team Members
+
+**Problem Solved:**
+New team members don't know who does what, what the processes are, or where to find information.
+
+**Tom's Workflow:**
+1. New member added to GitHub → Tom notices
+2. Tom creates Introduction Discussion
+3. Tom provides links to key wiki pages
+4. Tom explains Tom's role and how to work with Tom
+5. Tom introduces team members and their roles
+6. Tom offers to answer onboarding questions
+7. Tom monitors new member's first week activity
+
+**Generated Wiki Pages:**
+- "Team Structure & Roles"
+- "How We Work: Process Guide"
+- "Common Tasks & How-Tos"
+- "Who to Ask About What"
+
+### Daily Standup Support
+
+**Problem Solved:**
+Standups take too long because everyone's reading from tickets. Nobody remembers what they committed to yesterday.
+
+**Tom's Workflow:**
+1. Before standup: Generate status summary
+2. List each person's completed work
+3. List current in-progress items
+4. Flag any missed commitments
+5. Highlight blockers needing discussion
+6. Suggest standup agenda topics
+7. Post summary to channel/Discussion
+
+**Standup Summary Format:**
+```
+**Daily Standup Summary - Oct 27**
+
+Alice:
+- ✅ Completed: Issue #100 (auth flow)
+- 🚧 Working on: Issue #105 (frontend dashboard)
+- No blockers
+
+Bob:
+- ✅ Completed: PR #50 merged
+- 🚧 Working on: Issue #110 (API refactor)
+- ⚠️  Note: Issue #110 was due yesterday, needs update
+
+Carol:
+- ✅ Completed: Code review on 3 PRs
+- 🚧 Working on: Issue #115 (mobile design)
+- 🚫 Blocked: Waiting on design assets from vendor
+
+**Topics for Discussion:**
+- Bob's Issue #110 deadline slip
+- Carol's blocker on vendor assets
+```
+
+### Cross-Team Coordination
+
+**Problem Solved:**
+Dependencies on other teams get lost. Nobody knows when the other team will deliver what we need.
+
+**Tom's Workflow:**
+1. Detect external dependencies in Issues
+2. Create tracking Issue for external dependency
+3. Send check-in reminders to liaison
+4. Update team on external progress
+5. Notify when external dependencies resolve
+6. Document cross-team processes in wiki
+
+---
+
+## Success Metrics
+
+### After 3 Months Using Tom:
+- ✅ All meeting action items tracked in GitHub Issues
+- ✅ 90% of PRs reviewed within team SLA
+- ✅ Zero dropped handoffs during vacations
+- ✅ Wiki has comprehensive process documentation
+- ✅ Team can onboard new members faster
+
+### After 6 Months:
+- ✅ 50% reduction in time spent in status meetings
+- ✅ All architectural decisions documented in Discussions
+- ✅ Sprint planning takes 20 minutes instead of 2 hours
+- ✅ Process bottlenecks identified and addressed
+- ✅ Team velocity and predictability improved
+
+### After 12 Months:
+- ✅ New team members onboard via auto-generated wiki guides
+- ✅ Cross-project dependencies tracked automatically
+- ✅ Continuous process improvement based on metrics
+- ✅ Team can scale without proportional coordination overhead
+
+---
+
+## Technical Architecture
+
+### Email Interface
+- Primary communication channel
+- Standard SMTP/IMAP protocols
+- Natural language processing via LLM
+- No special syntax or commands required
+
+### GitHub MCP Server
+- Leverages official GitHub MCP server
+- Full access to Issues, PRs, Projects, Wiki, Discussions
+- Real-time webhooks for event responses
+- RESTful API for scheduled tasks
+
+### Stateless Design
+- No internal database for coordination state
+- All state lives in GitHub (Issues, Wiki, Projects)
+- Each interaction: read state → process → update tools → forget
+- Human-auditable state at all times
+
+### LLM Integration
+- Claude API for natural language understanding
+- Speech act detection in emails
+- Context-aware responses
+- Haiku 3.5 for cost-effective production use
+
+### Deployment Options
+- **GitHub Actions**: Free for public repos, fully integrated
+- **AWS Lambda**: For private/enterprise deployments
+- **Self-hosted**: Run on your own infrastructure
+
+---
+
+## Communication Style
+
+Tom communicates like a helpful, competent coordinator who's good with people:
+
+**Tone:**
+- Friendly but professional
+- Clear and direct
+- Occasionally worries about things falling through cracks
+- Genuinely wants everyone to succeed
+- Not overly formal or robotic
+
+**Example Tom Messages:**
+
+```
+"Hey Sarah, just checking in on the API docs (Issue #123). 
+It's due Friday and I haven't seen any recent updates. 
+Everything okay? Let me know if you need help!"
+```
+
+```
+"Hi team, I noticed our PR review time has dropped from 
+3 days to 1.2 days since we started the rotating review 
+duty. Nice work! 🎉"
+```
+
+```
+"Bob, I see you're assigned to 8 issues while Carol has 2. 
+Would it make sense to reassign Issues #200-202 to Carol? 
+They're all frontend work she's familiar with."
+```
+
+**When Tom Doesn't Know:**
+```
+"I'm not sure whether Issue #150 is blocked by Issue #148. 
+Could you clarify the dependency?"
+```
+
+**When Tom Makes Mistakes:**
+```
+"Oops, I assigned Issue #175 to the wrong person. 
+I've reassigned it to Sarah (who actually committed to it). 
+Sorry for the confusion!"
+```
+
+---
+
+## Getting Started with Tom
+
+### 1. Add Tom to Your GitHub Repository
+
+Invite `@tom-smykowski` (or your configured Tom account) as a collaborator to your GitHub repository.
+
+### 2. Initial Onboarding
+
+Tom will create an Introduction Discussion asking:
+- Who are the team members?
+- What are you currently working on?
+- What are the immediate deadlines?
+- What processes should Tom know about?
+
+### 3. Start Using Tom
+
+**Via Email:**
+- Send meeting notes to `tom@smykowski.work`
+- CC Tom on important team emails
+- Ask Tom questions about project status
+
+**Via GitHub:**
+- @mention Tom in Issues/Discussions
+- Tom monitors PRs and Issues automatically
+- Tom updates wiki pages as processes evolve
+
+### 4. Tom Learns Your Team
+
+Over time, Tom learns:
+- Who has expertise in what areas
+- Team's preferred workflows
+- Typical review times and deadlines
+- Communication patterns
+- Process improvements that work
+
+---
+
+## Differences from Traditional Project Management Tools
+
+### Smykowski vs. Jira:
+- ✅ **Tom**: Natural language, learns from context
+- ❌ **Jira**: Requires explicit configuration, rigid workflows
+- ✅ **Tom**: Proactive reminders and suggestions
+- ❌ **Jira**: Passive board that needs manual updates
+- ✅ **Tom**: Integrated with development workflow (GitHub)
+- ❌ **Jira**: Separate tool requiring context switching
+
+### Smykowski vs. Asana:
+- ✅ **Tom**: AI-driven insights and recommendations
+- ❌ **Asana**: Manual task management
+- ✅ **Tom**: Automated meeting → issue conversion
+- ❌ **Asana**: Manual task entry
+- ✅ **Tom**: Learns team patterns over time
+- ❌ **Asana**: Static tool requiring ongoing management
+
+### Smykowski vs. Linear:
+- ✅ **Tom**: Email-first interface, no new tool to learn
+- ❌ **Linear**: Yet another tool to check
+- ✅ **Tom**: Natural language understanding
+- ❌ **Linear**: Requires structured input
+- ✅ **Tom**: Free for open source (GitHub Actions)
+- ❌ **Linear**: Paid service
+
+---
+
+## Limitations & Boundaries
+
+### What Tom Does NOT Do:
+
+**❌ Make Strategic Decisions:**
+- Tom won't decide which features to build
+- Tom won't prioritize roadmap items
+- Tom won't make architectural decisions
+
+**❌ Evaluate Technical Merit:**
+- Tom won't assess code quality
+- Tom won't review technical designs
+- Tom won't make technology choices
+
+**❌ Manage People:**
+- Tom won't conduct performance reviews
+- Tom won't make hiring decisions
+- Tom won't resolve interpersonal conflicts
+
+**❌ Act as Domain Expert:**
+- Tom won't answer technical questions
+- Tom won't debug code
+- Tom won't design features
+
+### Tom's Role is Coordination Only:
+
+Tom handles the **mundane, error-prone coordination work** that keeps projects running:
+- Tracking commitments
+- Managing deadlines  
+- Maintaining documentation
+- Facilitating handoffs
+- Balancing workload
+- Synthesizing status
+
+Tom leaves **strategic and technical decisions to humans** where they belong.
+
+---
+
+## Privacy & Security
+
+### Data Handling:
+- All data lives in GitHub (your existing trust boundary)
+- Tom doesn't store data externally
+- Email communication can be encrypted
+- Complies with GitHub's security model
+
+### Access Control:
+- Tom inherits GitHub repository permissions
+- Team members control what Tom can see/do
+- Can be restricted to specific repositories
+- Audit trail in GitHub activity logs
+
+### Open Source:
+- Tom's code is open source (planned)
+- Community-auditable
+- Self-hostable for maximum control
+- No vendor lock-in
+
+---
+
+## Roadmap
+
+### Current: GitHub-First MVP
+- Email interface for natural communication
+- GitHub Issues/Projects integration
+- Wiki documentation automation
+- Basic deadline tracking
+
+### Near Future:
+- Enhanced GitHub Discussions integration
+- Improved PR review coordination
+- Sprint planning assistance
+- Advanced dependency tracking
+
+### Long-Term Vision:
+- Multi-repository coordination
+- Cross-team dependency management
+- Integration with additional tools (calendar, CI/CD)
+- Advanced process optimization suggestions
+- Machine learning for better predictions
+
+---
+
+## Why "Smykowski"?
+
+From the movie *Office Space*:
+
+> **Bob Slydell**: "What would you say... you do here?"  
+> **Tom Smykowski**: "Well look, I already told you! I deal with the goddamn customers so the engineers don't have to! I have people skills! I am good at dealing with people, can't you understand that? WHAT THE HELL IS WRONG WITH YOU PEOPLE?!"
+
+Tom Smykowski perfectly represents the role: **handling coordination so engineers can focus on engineering**. He's not doing the technical work, but he's critical to keeping things running smoothly.
+
+The name is a bit tongue-in-cheek (especially given Tom's eventual fate in the movie), but it captures the essence: Tom handles the "taking specs from customers and bringing them to engineers" work that's essential but often undervalued.
+
+---
+
+## Contributing
+
+Smykowski is built on the **Schrute framework**, an open-source foundation for building AI coordination assistants.
+
+**Get involved:**
+- Try Smykowski on your GitHub project
+- Report bugs and suggest features
+- Contribute improvements
+- Build your own coordination assistant using Schrute
+
+**Repository**: [github.com/your-repo/smykowski](https://github.com/your-repo/smykowski) *(planned)*
+
+---
+
+## License
+
+MIT License - See LICENSE file for details
+
+---
+
+## Contact
+
+- Email: tom@smykowski.work
+- GitHub: @tom-smykowski
+- Documentation: smykowski.work
+
+---
+
+*Smykowski: Because coordination shouldn't require a PhD in project management.*
