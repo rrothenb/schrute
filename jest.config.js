@@ -21,6 +21,10 @@ export default {
     ],
   },
   testMatch: ['**/__tests__/**/*.test.ts'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/examples/smykowski/', // Smykowski has its own jest config and should be tested separately
+  ],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',

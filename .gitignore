@@ -47,6 +47,11 @@ web_modules/
 # TypeScript cache
 *.tsbuildinfo
 
+# Compiled TypeScript files in src/ (prevents stale artifacts from interfering with tests)
+src/**/*.js
+src/**/*.d.ts
+!src/**/__tests__/**/*.js  # Allow test fixtures if needed
+
 # Optional npm cache directory
 .npm
 
