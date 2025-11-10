@@ -49,13 +49,12 @@ Now parse: "${dateText}"
 JSON:`
 
     try {
-      const response = await this.claudeClient.generateResponse({
-        system: 'You are a date/time parser that outputs only JSON.',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 200,
+      const response = await this.claudeClient.prompt(prompt, {
+        systemPrompt: 'You are a date/time parser that outputs only JSON.',
+        maxTokens: 200,
       })
 
-      const jsonMatch = response.content.match(/\{[\s\S]*\}/)
+      const jsonMatch = response.match(/\{[\s\S]*\}/)
       if (!jsonMatch) {
         return null
       }

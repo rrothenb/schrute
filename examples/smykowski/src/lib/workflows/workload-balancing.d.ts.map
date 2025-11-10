@@ -1,0 +1,1 @@
+{"version":3,"file":"workload-balancing.d.ts","sourceRoot":"","sources":["workload-balancing.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,UAAU,EAAE,sBAAsB,EAAE,WAAW,EAAE,MAAM,sBAAsB,CAAA;AAG3F,qBAAa,yBAAyB;IACpC,OAAO,CAAC,eAAe,CAAiB;;IAMlC,OAAO,CAAC,WAAW,EAAE,UAAU,EAAE,EAAE,MAAM,EAAE,WAAW,EAAE,GAAG,OAAO,CAAC,sBAAsB,CAAC;CA+BjG"}

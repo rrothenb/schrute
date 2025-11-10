@@ -7,8 +7,10 @@
     "paths": {
       "~/*": ["./src/*"],
       "@schrute/*": ["../../src/*"]
-    }
+    },
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", ".aws-sam"]
+  "exclude": ["node_modules", "dist", ".aws-sam", "__tests__"]
 }

@@ -59,13 +59,12 @@ Rules:
 JSON:`
 
     try {
-      const response = await this.claudeClient.generateResponse({
-        system: 'You are an expert at extracting commitments from emails. Output only valid JSON.',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1500,
+      const response = await this.claudeClient.prompt(prompt, {
+        systemPrompt: 'You are an expert at extracting commitments from emails. Output only valid JSON.',
+        maxTokens: 1500,
       })
 
-      const jsonMatch = response.content.match(/\[[\s\S]*\]/)
+      const jsonMatch = response.match(/\[[\s\S]*\]/)
       if (!jsonMatch) {
         return []
       }
