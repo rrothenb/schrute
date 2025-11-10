@@ -12,6 +12,11 @@ export default {
       'ts-jest',
       {
         useESM: true,
+        isolatedModules: true,
+        tsconfig: {
+          module: 'ESNext',
+          target: 'ES2020',
+        },
       },
     ],
   },

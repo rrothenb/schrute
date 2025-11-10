@@ -10,6 +10,20 @@ interface DetectedSpeechAct {
   metadata?: Record<string, unknown>
 }
 
+// Mapping from string to enum values - using string literals to avoid module loading issues
+const SPEECH_ACT_TYPE_MAP: Record<string, SpeechActType> = {
+  REQUEST: 'request' as SpeechActType,
+  QUESTION: 'question' as SpeechActType,
+  COMMITMENT: 'commitment' as SpeechActType,
+  DECISION: 'decision' as SpeechActType,
+  STATEMENT: 'statement' as SpeechActType,
+  GREETING: 'greeting' as SpeechActType,
+  ACKNOWLEDGMENT: 'acknowledgment' as SpeechActType,
+  SUGGESTION: 'suggestion' as SpeechActType,
+  OBJECTION: 'objection' as SpeechActType,
+  AGREEMENT: 'agreement' as SpeechActType,
+}
+
 const SPEECH_ACT_DETECTION_PROMPT = `You are an expert at analyzing email communication and identifying speech acts.
 
 A speech act is a specific communicative action performed through language. Examples include:
@@ -91,11 +105,8 @@ export class SpeechActDetector {
 
   private mapSpeechActType(typeStr: string): SpeechActType {
     const normalized = typeStr.toUpperCase()
-    if (normalized in SpeechActType) {
-      return SpeechActType[normalized as keyof typeof SpeechActType]
-    }
-    // Default to STATEMENT if unknown
-    return SpeechActType.STATEMENT
+    // Use the pre-defined mapping to avoid runtime enum issues
+    return SPEECH_ACT_TYPE_MAP[normalized] || ('statement' as SpeechActType)
   }
 }
 
