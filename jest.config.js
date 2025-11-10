@@ -27,4 +27,14 @@ export default {
     '!src/cli/**',
     '!src/mcp-servers/**/server.ts',
   ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'text-summary', 'html', 'lcov', 'json'],
+  coverageThresholds: {
+    global: {
+      branches: 70,
+      functions: 75,
+      lines: 80,
+      statements: 80,
+    },
+  },
 }
