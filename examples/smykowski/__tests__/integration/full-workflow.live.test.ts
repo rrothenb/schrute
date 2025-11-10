@@ -1,3 +1,4 @@
+// @ts-nocheck - Disable type checking for this test file due to extensive mocking
 import { describe, it, expect, beforeAll, jest } from '@jest/globals'
 import { ClaudeClient } from '@schrute/lib/claude/client.js'
 import { SpeechActDetector } from '@schrute/lib/speech-acts/detector.js'
@@ -5,9 +6,7 @@ import { ActionItemExtractor } from '~/lib/extractors/action-items.js'
 import { CommitmentExtractor } from '~/lib/extractors/commitments.js'
 import { DateParser } from '~/lib/extractors/dates.js'
 import { MeetingFollowupWorkflow } from '~/lib/workflows/meeting-followup.js'
-import { DeadlineTrackingWorkflow } from '~/lib/workflows/deadline-tracking.js'
 import type { Email } from '@schrute/lib/types/index.js'
-import type { GitHubService } from '~/lib/github/index.js'
 
 /**
  * COMPREHENSIVE SMYKOWSKI INTEGRATION TEST
@@ -44,7 +43,8 @@ describe('Smykowski Full Workflow Integration (Live Claude API)', () => {
   let actionItemExtractor: ActionItemExtractor
   let commitmentExtractor: CommitmentExtractor
   let dateParser: DateParser
-  let mockGitHub: jest.Mocked<GitHubService>
+  let mockGitHub: any
+  let mockSchrute: any
 
   // Mock GitHub service
   beforeAll(() => {
@@ -54,12 +54,13 @@ describe('Smykowski Full Workflow Integration (Live Claude API)', () => {
     }
 
     claudeClient = new ClaudeClient()
-    speechActDetector = new SpeechActDetector(claudeClient)
+    speechActDetector = new SpeechActDetector()
     actionItemExtractor = new ActionItemExtractor(claudeClient)
     commitmentExtractor = new CommitmentExtractor(claudeClient)
     dateParser = new DateParser(claudeClient)
 
-    // Mock GitHub service
+    // @ts-ignore - Mock setup with relaxed types for testing
+    // Mock GitHub service (using any to avoid strict type checking in tests)
     mockGitHub = {
       issues: {
         create: jest.fn().mockResolvedValue({
@@ -68,15 +69,15 @@ describe('Smykowski Full Workflow Integration (Live Claude API)', () => {
           title: 'Implement authentication',
           state: 'open',
           html_url: 'https://github.com/test/repo/issues/123',
-        }),
-        update: jest.fn(),
-        get: jest.fn(),
-        list: jest.fn().mockResolvedValue([]),
-        close: jest.fn(),
-        addAssignees: jest.fn(),
-        addLabels: jest.fn(),
-        getAssignedTo: jest.fn().mockResolvedValue([]),
-        getByLabels: jest.fn().mockResolvedValue([]),
+        } as any),
+        update: jest.fn() as any,
+        get: jest.fn() as any,
+        list: jest.fn().mockResolvedValue([] as any),
+        close: jest.fn() as any,
+        addAssignees: jest.fn() as any,
+        addLabels: jest.fn() as any,
+        getAssignedTo: jest.fn().mockResolvedValue([] as any),
+        getByLabels: jest.fn().mockResolvedValue([] as any),
       },
       discussions: {
         create: jest.fn().mockResolvedValue({
@@ -84,30 +85,36 @@ describe('Smykowski Full Workflow Integration (Live Claude API)', () => {
           number: 1,
           title: 'Sprint Planning - Nov 10',
           url: 'https://github.com/test/repo/discussions/1',
-        }),
-        getCategoryId: jest.fn().mockResolvedValue('CAT_1'),
-        addComment: jest.fn(),
+        } as any),
+        getCategoryId: jest.fn().mockResolvedValue('CAT_1' as any),
+        addComment: jest.fn() as any,
       },
       pullRequests: {
-        list: jest.fn().mockResolvedValue([]),
-        get: jest.fn(),
-        requestReviewers: jest.fn(),
-        createReview: jest.fn(),
-        addComment: jest.fn(),
-        getStale: jest.fn().mockResolvedValue([]),
+        list: jest.fn().mockResolvedValue([] as any),
+        get: jest.fn() as any,
+        requestReviewers: jest.fn() as any,
+        createReview: jest.fn() as any,
+        addComment: jest.fn() as any,
+        getStale: jest.fn().mockResolvedValue([] as any),
       },
       wiki: {
-        getPage: jest.fn(),
-        createOrUpdatePage: jest.fn(),
-        listPages: jest.fn().mockResolvedValue([]),
+        getPage: jest.fn() as any,
+        createOrUpdatePage: jest.fn() as any,
+        listPages: jest.fn().mockResolvedValue([] as any),
       },
       projects: {
-        listProjects: jest.fn().mockResolvedValue([]),
-        getProject: jest.fn(),
-        listItems: jest.fn().mockResolvedValue([]),
-        addItem: jest.fn(),
-        updateItem: jest.fn(),
+        listProjects: jest.fn().mockResolvedValue([] as any),
+        getProject: jest.fn() as any,
+        listItems: jest.fn().mockResolvedValue([] as any),
+        addItem: jest.fn() as any,
+        updateItem: jest.fn() as any,
       },
+    } as any
+
+    // Mock Schrute bridge
+    mockSchrute = {
+      detectSpeechActs: jest.fn(),
+      extractSpeechActs: jest.fn(),
     } as any
   })
 
@@ -166,7 +173,7 @@ Alice`,
 
       // Step 1: Detect speech acts with Schrute
       console.log('🔍 Step 1: Detecting speech acts...')
-      const speechActs = await speechActDetector.detect(sprintPlanningEmail)
+      const speechActs = await speechActDetector.detectSpeechActs(sprintPlanningEmail)
 
       console.log(`   Found ${speechActs.length} speech acts:`)
       for (const act of speechActs) {
@@ -175,8 +182,8 @@ Alice`,
 
       // Verify speech acts detected
       expect(speechActs.length).toBeGreaterThan(3)
-      expect(speechActs.some(a => a.type === 'request')).toBe(true)
-      expect(speechActs.some(a => a.type === 'decision')).toBe(true)
+      expect(speechActs.some((a: any) => a.type === 'request')).toBe(true)
+      expect(speechActs.some((a: any) => a.type === 'decision')).toBe(true)
 
       // Step 2: Extract action items
       console.log('\n📋 Step 2: Extracting action items...')
@@ -211,8 +218,8 @@ Alice`,
       for (const commitment of commitments) {
         console.log(`   - "${commitment.commitment_text}"`)
         console.log(`     By: ${commitment.person_name}`)
-        if (commitment.deadline_text) {
-          console.log(`     Deadline: ${commitment.deadline_text}`)
+        if (commitment.deadline) {
+          console.log(`     Deadline: ${commitment.deadline}`)
         }
       }
 
@@ -247,11 +254,13 @@ Alice`,
 
       // Step 5: Create GitHub issues (mocked)
       console.log('\n📝 Step 5: Creating GitHub issues...')
-      const meetingWorkflow = new MeetingFollowupWorkflow(mockGitHub as any, {
-        detectSpeechActs: async () => speechActs,
-      } as any)
+      const meetingWorkflow = new MeetingFollowupWorkflow(
+        mockGitHub as any,
+        actionItemExtractor,
+        mockSchrute as any
+      )
 
-      await meetingWorkflow.processEmail(sprintPlanningEmail)
+      const workflowResult = await meetingWorkflow.execute(sprintPlanningEmail)
 
       // Verify GitHub interactions
       expect(mockGitHub.issues.create).toHaveBeenCalled()
@@ -301,7 +310,7 @@ Bob`,
       }
 
       console.log('🔍 Step 6: Processing status update...')
-      const statusSpeechActs = await speechActDetector.detect(statusUpdateEmail)
+      const statusSpeechActs = await speechActDetector.detectSpeechActs(statusUpdateEmail)
       const statusActionItems = await actionItemExtractor.extract(statusUpdateEmail)
       const statusCommitments = await commitmentExtractor.extract(statusUpdateEmail)
 
@@ -312,7 +321,7 @@ Bob`,
       // Verify status update processing
       expect(statusSpeechActs.length).toBeGreaterThan(0)
       expect(
-        statusSpeechActs.some(a => a.type === 'commitment' || a.type === 'inform')
+        statusSpeechActs.some((a: any) => a.type === 'commitment' || a.type === 'inform')
       ).toBe(true)
 
       // ================================================================
@@ -396,8 +405,8 @@ Alice`,
         in_reply_to: null,
       }
 
-      const speechActs = await speechActDetector.detect(decisionEmail)
-      const decisions = speechActs.filter(a => a.type === 'decision')
+      const speechActs = await speechActDetector.detectSpeechActs(decisionEmail)
+      const decisions = speechActs.filter((a: any) => a.type === 'decision')
 
       console.log(`   Detected ${decisions.length} decisions:`)
       for (const decision of decisions) {
@@ -406,7 +415,7 @@ Alice`,
 
       expect(decisions.length).toBeGreaterThan(0)
       expect(
-        decisions.some(d =>
+        decisions.some((d: any) =>
           d.content.toLowerCase().includes('oauth') ||
           d.content.toLowerCase().includes('jwt') ||
           d.content.toLowerCase().includes('token')
@@ -451,7 +460,7 @@ Thoughts?`,
         in_reply_to: null,
       }
 
-      const speechActs = await speechActDetector.detect(workloadEmail)
+      const speechActs = await speechActDetector.detectSpeechActs(workloadEmail)
       const actionItems = await actionItemExtractor.extract(workloadEmail)
 
       console.log(`   Speech acts: ${speechActs.length}`)
