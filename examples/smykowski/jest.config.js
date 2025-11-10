@@ -2,6 +2,10 @@ export default {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
+  moduleDirectories: ['node_modules'],
+  transformIgnorePatterns: [
+    'node_modules/(?!(@anthropic-ai)/)',
+  ],
   moduleNameMapper: {
     '^~/(.*)\.js$': '<rootDir>/src/$1',
     '^~/(.*)$': '<rootDir>/src/$1',

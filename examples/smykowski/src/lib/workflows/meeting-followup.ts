@@ -171,7 +171,7 @@ export class MeetingFollowupWorkflow {
     const meetingDate = new Date(email.timestamp).toLocaleDateString()
     let body = `# ${email.subject}\n\n`
     body += `**Date:** ${meetingDate}\n`
-    body += `**Attendees:** ${email.to.map(t => t.name).join(', ')}\n\n`
+    body += `**Attendees:** ${email.to.map((t: { name: string; email: string }) => t.name).join(', ')}\n\n`
 
     body += `## Action Items\n\n`
     if (createdIssues.length > 0) {

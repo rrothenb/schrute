@@ -25,7 +25,7 @@ export class CommitmentExtractor {
 
 Email:
 From: ${email.from.name} <${email.from.email}>
-To: ${email.to.map(t => `${t.name} <${t.email}>`).join(', ')}
+To: ${email.to.map((t: { name: string; email: string }) => `${t.name} <${t.email}>`).join(', ')}
 Subject: ${email.subject}
 Date: ${email.timestamp}
 
