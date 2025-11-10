@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from '@jest/globals'
 import { mockClient } from 'aws-sdk-client-mock'
 import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { S3KnowledgeStore } from '~/lib/storage/s3-knowledge-store.js'
-import { Readable } from 'stream'
 
 const s3Mock = mockClient(S3Client)
 
