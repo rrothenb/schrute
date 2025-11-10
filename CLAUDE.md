@@ -21,6 +21,15 @@ AI coordination assistant using email interface.
 - ✅ Comprehensive deployment automation via AWS SAM
 - ✅ Backward compatible with Phase 1 local testing
 
+**Phase 3 (COMPLETE):** Example Applications
+- ✅ Smykowski: AI Project Coordinator for GitHub
+- ✅ Full GitHub integration (Issues, PRs, Wiki, Discussions, Projects)
+- ✅ LLM-powered extractors (action items, commitments, dates, dependencies)
+- ✅ ML-based expertise tracking and workload balancing
+- ✅ Core coordination workflows (meeting followup, deadline tracking, PR review, etc.)
+- ✅ Complete AWS deployment infrastructure
+- ✅ Demonstrates extension patterns without modifying Schrute core
+
 ## 📚 Tech Stack
 - Runtime: Node.js 18+
 - Language: TypeScript 5 (strict mode)
@@ -61,6 +70,24 @@ schrute/
 ├── personalities/                    # Personality configurations
 ├── knowledge/                        # Knowledge store markdown files
 ├── skills/                           # Dynamic skills JSON storage
+├── examples/                         # Example applications (Phase 3)
+│   └── smykowski/                    # GitHub project coordinator
+│       ├── src/
+│       │   ├── lib/
+│       │   │   ├── types/            # Smykowski-specific types
+│       │   │   ├── github/           # GitHub API integration
+│       │   │   ├── extractors/       # LLM-powered extractors
+│       │   │   ├── workflows/        # Coordination workflows
+│       │   │   ├── storage/          # DynamoDB storage
+│       │   │   ├── integrations/     # Schrute bridge
+│       │   │   └── wiki/             # Wiki generation
+│       │   ├── lambdas/              # Lambda handlers
+│       │   └── mcp-servers/          # Custom MCP servers
+│       ├── __tests__/                # Test suite
+│       ├── template.yaml             # AWS SAM template
+│       ├── ARCHITECTURE.md
+│       ├── DEPLOYMENT.md
+│       └── README.md                 # Full feature description
 ├── dist/                             # Build output (gitignored)
 ├── template.yaml                     # AWS SAM template (Phase 2)
 ├── ARCHITECTURE-PHASE2.md            # Phase 2 architecture documentation
@@ -177,6 +204,60 @@ Responder Lambda → Assemble context → Generate response → Send via SES
 
 See **ARCHITECTURE-PHASE2.md** for detailed architecture documentation.
 See **DEPLOYMENT.md** for step-by-step deployment guide.
+
+## 🏗️ Phase 3 - Example Applications
+
+### Smykowski: AI Project Coordinator for GitHub
+
+**Location**: `examples/smykowski/`
+
+Smykowski demonstrates how to build specialized coordination assistants on top of Schrute without modifying the core framework.
+
+**Key Features**:
+- **GitHub Integration**: Full API integration (Issues, PRs, Wiki, Discussions, Projects v2)
+- **LLM-Powered Extractors**: Extract action items, commitments, and dates from natural language
+- **ML-Based Expertise Tracking**: Learn team member expertise from GitHub activity
+- **Coordination Workflows**:
+  - Meeting Followup: Convert notes → GitHub issues
+  - Deadline Tracking: Monitor commitments, send reminders
+  - PR Review Coordination: Track reviews, escalate stale PRs
+  - Status Synthesis: Generate project status reports
+  - Workload Balancing: Identify and resolve team workload imbalances
+
+**Architecture Pattern**:
+```typescript
+// Smykowski extends Schrute through composition
+import { SchruteBridge } from './integrations/schrute-bridge.js'
+import { GitHubService } from './github/index.js'
+
+// Bridge provides access to Schrute's core features
+const schrute = new SchruteBridge({ claudeApiKey })
+const speechActs = await schrute.detectSpeechActs(email)
+
+// Smykowski adds GitHub-specific functionality
+const github = new GitHubService(token, repo, webhookSecret)
+await github.issues.create({ title, body, assignees })
+```
+
+**Deployment**:
+```bash
+cd examples/smykowski
+npm install
+npm run build:lambda
+npm run deploy
+```
+
+**Storage**:
+- **GitHub**: Human-readable state (issues, wiki, discussions)
+- **DynamoDB**: Internal state (commitments, team state, metrics)
+- **Schrute Integration**: Inherits privacy, speech acts, personality
+
+**Documentation**:
+- `examples/smykowski/README.md` - Feature description
+- `examples/smykowski/ARCHITECTURE.md` - Technical architecture
+- `examples/smykowski/DEPLOYMENT.md` - Deployment guide
+
+See Smykowski as a reference for building your own Schrute-based coordination assistants.
 
 ## 📧 Email YAML Format
 
@@ -423,11 +504,13 @@ See **TESTING.md** for comprehensive testing documentation including:
 **Current State:**
 - ✅ Phase 1: Complete and functional (local CLI testing)
 - ✅ Phase 2: Complete and ready for deployment (AWS production)
+- ✅ Phase 3: Complete with Smykowski example application
 
 **Key Principles:**
 - Focus on modular, production-quality code
 - MCP provides extensibility without core changes
 - Storage abstraction allows local and cloud operation
+- Extension pattern: Build on Schrute without modifying core
 - Backward compatible: CLI still works with YAML files
 - Forward compatible: Lambda handlers use same core libraries
 
@@ -435,9 +518,19 @@ See **TESTING.md** for comprehensive testing documentation including:
 - **Local Development:** Use CLI with YAML mock emails (`npm run dev`)
 - **Production:** Deploy to AWS with SAM (`npm run deploy`)
 - **Testing:** Unit tests work without AWS (`npm test:unit`)
+- **Example Apps:** Build specialized assistants in `examples/` directory
 
-**Next Steps (Future Phases):**
+**Building on Schrute (Phase 3 Pattern):**
+1. Create new directory under `examples/`
+2. Import Schrute components via `@schrute/*` alias
+3. Add specialized functionality (e.g., GitHub integration)
+4. Deploy independently with own SAM template
+5. Reference Smykowski as implementation guide
+
+**Next Steps (Future Enhancements):**
+- Additional example applications (Slack coordinator, Jira sync, etc.)
 - Vector embeddings for semantic search
 - Enhanced MCP skill discovery
 - Web dashboard for monitoring
 - Multi-region deployment
+- Official GitHub MCP server integration
