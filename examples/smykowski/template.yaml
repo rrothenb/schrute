@@ -1,0 +1,224 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Smykowski - AI Project Coordinator for GitHub (Built on Schrute)
+
+Parameters:
+  GitHubRepository:
+    Type: String
+    Description: GitHub repository (owner/repo)
+
+  GitHubToken:
+    Type: String
+    Description: GitHub Personal Access Token
+    NoEcho: true
+
+  GitHubWebhookSecret:
+    Type: String
+    Description: GitHub Webhook Secret
+    NoEcho: true
+
+  ClaudeAPIKey:
+    Type: String
+    Description: Anthropic Claude API Key
+    NoEcho: true
+
+  TeamLeadEmail:
+    Type: String
+    Description: Team lead email for escalations
+
+Globals:
+  Function:
+    Timeout: 120
+    MemorySize: 1024
+    Runtime: nodejs18.x
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        NODE_ENV: production
+        GITHUB_REPOSITORY: !Ref GitHubRepository
+        TEAM_LEAD_EMAIL: !Ref TeamLeadEmail
+
+Resources:
+  # ============================================================================
+  # DynamoDB Tables
+  # ============================================================================
+
+  CommitmentsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-commitments'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: person_email
+          AttributeType: S
+        - AttributeName: deadline
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: person_email-index
+          KeySchema:
+            - AttributeName: person_email
+              KeyType: HASH
+            - AttributeName: deadline
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+
+  TeamStateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-team-state'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+
+  MetricsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-metrics'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: metric_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: metric_id
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+
+  # ============================================================================
+  # Secrets Manager
+  # ============================================================================
+
+  GitHubTokenSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${AWS::StackName}/github-token'
+      SecretString: !Ref GitHubToken
+
+  GitHubWebhookSecretSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${AWS::StackName}/github-webhook-secret'
+      SecretString: !Ref GitHubWebhookSecret
+
+  ClaudeAPIKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${AWS::StackName}/claude-api-key'
+      SecretString: !Ref ClaudeAPIKey
+
+  # ============================================================================
+  # Lambda Functions
+  # ============================================================================
+
+  EmailProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: lambdas/email-processor/index.handler
+      Environment:
+        Variables:
+          COMMITMENTS_TABLE: !Ref CommitmentsTable
+          TEAM_STATE_TABLE: !Ref TeamStateTable
+          GITHUB_TOKEN_SECRET: !Ref GitHubTokenSecret
+          CLAUDE_API_KEY_SECRET: !Ref ClaudeAPIKeySecret
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CommitmentsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TeamStateTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - !Ref GitHubTokenSecret
+                - !Ref ClaudeAPIKeySecret
+
+  GitHubWebhookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: lambdas/github-webhook/index.handler
+      Environment:
+        Variables:
+          COMMITMENTS_TABLE: !Ref CommitmentsTable
+          TEAM_STATE_TABLE: !Ref TeamStateTable
+          GITHUB_TOKEN_SECRET: !Ref GitHubTokenSecret
+          GITHUB_WEBHOOK_SECRET: !Ref GitHubWebhookSecretSecret
+      Events:
+        WebhookApi:
+          Type: Api
+          Properties:
+            Path: /webhook
+            Method: post
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CommitmentsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TeamStateTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - !Ref GitHubTokenSecret
+                - !Ref GitHubWebhookSecretSecret
+
+  SchedulerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: lambdas/scheduler/index.handler
+      Environment:
+        Variables:
+          COMMITMENTS_TABLE: !Ref CommitmentsTable
+          TEAM_STATE_TABLE: !Ref TeamStateTable
+          METRICS_TABLE: !Ref MetricsTable
+          GITHUB_TOKEN_SECRET: !Ref GitHubTokenSecret
+      Events:
+        ScheduledEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(15 minutes)
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CommitmentsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TeamStateTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MetricsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - !Ref GitHubTokenSecret
+
+Outputs:
+  WebhookUrl:
+    Description: GitHub Webhook URL
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhook'
+
+  CommitmentsTableName:
+    Description: Commitments DynamoDB Table
+    Value: !Ref CommitmentsTable
+
+  TeamStateTableName:
+    Description: Team State DynamoDB Table
+    Value: !Ref TeamStateTable
