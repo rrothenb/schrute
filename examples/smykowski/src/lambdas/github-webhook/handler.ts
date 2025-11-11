@@ -144,7 +144,10 @@ async function executeProcesses(
       try {
         // Build execution context
         const context: ProcessExecutionContext = {
-          event: payload,
+          event: {
+            ...payload,
+            discussion: payload.discussion ? convertToGitHubDiscussion(payload.discussion) : undefined,
+          },
           issue: payload.issue ? convertToGitHubIssue(payload.issue) : undefined,
           pull_request: payload.pull_request,
           repo,
@@ -214,5 +217,24 @@ function convertToGitHubIssue(webhookIssue: any): GitHubIssue {
     })) || [],
     html_url: webhookIssue.html_url,
     comments: webhookIssue.comments || 0,
+  }
+}
+
+/**
+ * Convert webhook discussion payload to GitHubDiscussion type
+ */
+function convertToGitHubDiscussion(webhookDiscussion: any): any {
+  return {
+    number: webhookDiscussion.number,
+    title: webhookDiscussion.title,
+    body: webhookDiscussion.body || '',
+    author: {
+      login: webhookDiscussion.user?.login || 'unknown',
+      id: webhookDiscussion.user?.id || 0,
+    },
+    comments: webhookDiscussion.comments || [],
+    category: webhookDiscussion.category?.name || 'General',
+    created_at: webhookDiscussion.created_at,
+    updated_at: webhookDiscussion.updated_at,
   }
 }

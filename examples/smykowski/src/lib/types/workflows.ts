@@ -326,7 +326,17 @@ export type SmykowskiConfig = z.infer<typeof SmykowskiConfigSchema>
 // ============================================================================
 
 export const ProcessActionSchema = z.object({
-  type: z.enum(['comment', 'label', 'assign', 'create_issue', 'update_wiki', 'calculate_metrics']),
+  type: z.enum([
+    'comment',
+    'label',
+    'assign',
+    'create_issue',
+    'update_wiki',
+    'calculate_metrics',
+    'classify_and_label',
+    'answer_question',
+    'generate_wiki_from_discussion',
+  ]),
   description: z.string(), // Natural language description
   parameters: z.record(z.unknown()).optional(),
 })
@@ -378,6 +388,22 @@ export interface ProcessExecutionContext {
   pull_request?: GitHubPullRequest
   repo: string
   triggered_at: string
+}
+
+// Add discussion type for context
+export interface GitHubDiscussion {
+  number: number
+  title: string
+  body: string
+  author: { login: string; id: number }
+  comments?: Array<{
+    author: string
+    body: string
+    created_at: string
+  }>
+  category: string
+  created_at: string
+  updated_at: string
 }
 
 // ============================================================================

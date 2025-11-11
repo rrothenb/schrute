@@ -101,6 +101,15 @@ export class ProcessExecutor {
       case 'update_wiki':
         return await this.executeUpdateWiki(action, process, context)
 
+      case 'classify_and_label':
+        return await this.executeClassifyAndLabel(action, process, context)
+
+      case 'answer_question':
+        return await this.executeAnswerQuestion(action, process, context)
+
+      case 'generate_wiki_from_discussion':
+        return await this.executeGenerateWikiFromDiscussion(action, process, context)
+
       default:
         throw new WorkflowError(`Unknown action type: ${(action as any).type}`)
     }
@@ -317,6 +326,176 @@ Write in a casual but professional tone. Be genuinely helpful without being over
   }
 
   /**
+   * Classify an issue and add appropriate labels
+   */
+  private async executeClassifyAndLabel(
+    action: ProcessAction,
+    process: ProcessDefinition,
+    context: ProcessExecutionContext
+  ): Promise<string> {
+    if (!context.issue) {
+      throw new WorkflowError('Cannot classify: no issue in context')
+    }
+
+    // Dynamic import to avoid circular dependencies
+    const { IssueClassifier } = await import('~/lib/extractors/index.js')
+    const classifier = new IssueClassifier(this.claudeClient)
+
+    const classification = await classifier.classify(context.issue)
+
+    // Get confidence threshold from action parameters or use default
+    const confidenceThreshold = (action.parameters?.confidence_threshold as number) || 0.8
+
+    if (!classifier.isHighConfidence(classification, confidenceThreshold)) {
+      return `Classification confidence too low (${classification.confidence}), skipping auto-label`
+    }
+
+    // Add the primary category label
+    const labelsToAdd = [classification.primary_category, ...classification.suggested_labels]
+
+    // Get existing labels
+    const existingLabels = context.issue.labels.map(l => l.name)
+
+    // Only add labels that don't already exist
+    const newLabels = labelsToAdd.filter(l => !existingLabels.includes(l))
+
+    if (newLabels.length === 0) {
+      return 'All suggested labels already present'
+    }
+
+    await this.github.issues.addLabels(context.issue.number, newLabels)
+
+    return `Added labels: ${newLabels.join(', ')} (confidence: ${classification.confidence})`
+  }
+
+  /**
+   * Detect if issue is a question and post an answer
+   */
+  private async executeAnswerQuestion(
+    action: ProcessAction,
+    process: ProcessDefinition,
+    context: ProcessExecutionContext
+  ): Promise<string> {
+    if (!context.issue) {
+      throw new WorkflowError('Cannot answer question: no issue in context')
+    }
+
+    // Dynamic import
+    const { QuestionAnswerer } = await import('~/lib/extractors/index.js')
+    const answerer = new QuestionAnswerer(this.claudeClient)
+
+    // First, check if this is a question
+    const analysis = await answerer.analyzeQuestion(context.issue)
+
+    if (!analysis.is_question || analysis.confidence < 0.7) {
+      return 'Issue does not appear to be a question (or low confidence)'
+    }
+
+    // Gather documentation from wiki and README
+    const availableDocs: Array<{ source: string; content: string }> = []
+
+    try {
+      // Try to get README
+      const readme = await this.github.wiki.getPage('Home')
+      if (readme) {
+        availableDocs.push({ source: 'README/Home', content: readme.content })
+      }
+    } catch {
+      // README not available
+    }
+
+    // Get other wiki pages that might be relevant (limit to 3 for token budget)
+    try {
+      const wikiPages = await this.github.wiki.listPages()
+      for (const page of wikiPages.slice(0, 3)) {
+        const content = await this.github.wiki.getPage(page.title)
+        if (content) {
+          availableDocs.push({ source: `Wiki: ${page.title}`, content: content.content })
+        }
+      }
+    } catch {
+      // Wiki not available
+    }
+
+    // Generate answer
+    const answer = await answerer.generateAnswer(
+      context.issue,
+      analysis.extracted_question,
+      availableDocs
+    )
+
+    // Check if we should auto-post
+    const autoPostThreshold = (action.parameters?.confidence_threshold as number) || 0.7
+
+    if (!answerer.shouldAutoPost(answer, autoPostThreshold)) {
+      return `Answer generated but confidence too low (${answer.confidence}), needs human review`
+    }
+
+    // Post the answer as a comment
+    await this.github.issues.createComment({
+      issue_number: context.issue.number,
+      body: answer.answer,
+    })
+
+    return `Posted answer to question (confidence: ${answer.confidence})`
+  }
+
+  /**
+   * Generate a wiki page from a discussion
+   */
+  private async executeGenerateWikiFromDiscussion(
+    action: ProcessAction,
+    process: ProcessDefinition,
+    context: ProcessExecutionContext
+  ): Promise<string> {
+    if (!context.event.discussion) {
+      throw new WorkflowError('Cannot generate wiki: no discussion in context')
+    }
+
+    // Dynamic import
+    const { DiscussionSummarizer } = await import('~/lib/extractors/index.js')
+    const summarizer = new DiscussionSummarizer(this.claudeClient)
+
+    const discussion = context.event.discussion
+
+    // Check if discussion has enough content
+    const minComments = (action.parameters?.min_comments as number) || 3
+    if (!summarizer.shouldCreateWikiPage(discussion, minComments)) {
+      return `Discussion has too few comments (${discussion.comments?.length || 0}), skipping wiki generation`
+    }
+
+    // Generate summary
+    const summary = await summarizer.summarize({
+      title: discussion.title,
+      body: discussion.body,
+      comments: discussion.comments || [],
+    })
+
+    // Create wiki page
+    const wikiTitle = summary.wiki_page_suggestion.title
+    const wikiContent = summary.wiki_page_suggestion.content
+
+    await this.github.wiki.createOrUpdatePage({
+      title: wikiTitle,
+      content: wikiContent,
+      message: `Generated from Discussion #${discussion.number}`,
+    })
+
+    // Optionally, add a comment to the discussion linking to the wiki
+    if (action.parameters?.link_back !== false) {
+      const repo = this.github.getRepository()
+      const wikiUrl = `https://github.com/${repo.fullName}/wiki/${wikiTitle.replace(/\s+/g, '-')}`
+
+      const discussionComment = `📝 I've created a wiki page to document this discussion: [${wikiTitle}](${wikiUrl})`
+
+      // We'd need to add discussion comment capability to GitHubService
+      // For now, just return success
+    }
+
+    return `Created wiki page: ${wikiTitle}`
+  }
+
+  /**
    * Validate that a process can be executed in the given context
    */
   validateContext(
@@ -332,11 +511,19 @@ Write in a casual but professional tone. Be genuinely helpful without being over
 
     // Check if required context is available for actions
     const requiresIssue = process.actions.some(a =>
-      ['comment', 'label', 'assign'].includes(a.type)
+      ['comment', 'label', 'assign', 'classify_and_label', 'answer_question'].includes(a.type)
     )
 
     if (requiresIssue && !context.issue) {
       errors.push('Actions require an issue but none provided in context')
+    }
+
+    const requiresDiscussion = process.actions.some(a =>
+      a.type === 'generate_wiki_from_discussion'
+    )
+
+    if (requiresDiscussion && !context.event.discussion) {
+      errors.push('Actions require a discussion but none provided in context')
     }
 
     return {
