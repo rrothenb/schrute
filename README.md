@@ -2,10 +2,17 @@
 
 > "Identity theft is not a joke, Jim! Millions of families suffer every year!"
 
-An AI-powered coordination assistant that tracks decisions, commitments, and context across email conversations. Built with privacy-first design, extensible MCP architecture, and configurable personalities.
+A production-ready AI coordination assistant framework that tracks decisions, commitments, and context across email conversations. Built with privacy-first design, AWS serverless architecture, extensible MCP integration, and configurable personalities.
+
+**Status:** All three development phases complete and production-ready.
+
+- ✅ **Phase 1:** Local CLI prototype with speech act detection, privacy filtering, and MCP extensibility
+- ✅ **Phase 2:** AWS serverless deployment with real email integration (SES), Lambda functions, and scalable storage
+- ✅ **Phase 3:** Example application (Smykowski) demonstrating GitHub project coordination
 
 ## ✨ Features
 
+### Core Framework (Phase 1 + 2)
 - 🎯 **Speech Act Detection** - Automatically identifies requests, commitments, decisions, questions, and more
 - 🔒 **Privacy-Aware** - Respects participant visibility and never leaks information inappropriately
 - 🧠 **Hybrid Memory** - Efficient context management with full recent messages + summarized older ones
@@ -15,15 +22,26 @@ An AI-powered coordination assistant that tracks decisions, commitments, and con
 - 📧 **Email Threading** - Understands conversation context and relationships
 - 🤖 **Activation Logic** - Intelligently decides when to respond based on context
 
+### Production Deployment (Phase 2)
+- ☁️ **AWS Serverless** - Lambda functions with automatic scaling
+- 📬 **Real Email Integration** - Amazon SES for sending and receiving emails
+- 🗄️ **Scalable Storage** - S3 for email archives, DynamoDB for metadata and speech acts
+- 🔐 **Secure** - AWS Secrets Manager, encryption at rest, least-privilege IAM roles
+- 🚀 **One-Command Deploy** - AWS SAM for infrastructure as code
+
+### Example Applications (Phase 3)
+- 🐙 **Smykowski** - GitHub project coordinator with issue tracking, PR management, and workload balancing
+- 📊 **Extension Pattern** - Build specialized assistants without modifying core framework
+
 ## 🚀 Quick Start
 
-### Prerequisites
+### Local Development (Phase 1)
 
+**Prerequisites:**
 - Node.js 18+
 - Anthropic API key ([get one here](https://console.anthropic.com/))
 
-### Installation
-
+**Installation:**
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/schrute.git
@@ -40,8 +58,7 @@ cp .env.example .env
 npm run build
 ```
 
-### Run the CLI
-
+**Run the CLI:**
 ```bash
 # Development mode (auto-recompile with tsx)
 npm run dev
@@ -49,6 +66,41 @@ npm run dev
 # Production mode (after build)
 npm run cli
 ```
+
+### AWS Deployment (Phase 2)
+
+**Prerequisites:**
+- AWS account with SES configured
+- AWS CLI installed and configured
+- SAM CLI installed
+
+**Deploy to AWS:**
+```bash
+# Build and deploy
+npm run deploy
+
+# Quick redeploy (after first deployment)
+npm run deploy:quick
+```
+
+See **[DEPLOYMENT.md](DEPLOYMENT.md)** for detailed deployment instructions including:
+- SES domain verification
+- Email routing setup
+- Parameter configuration
+- Testing the deployment
+
+### Smykowski Example (Phase 3)
+
+To deploy the GitHub project coordinator example:
+
+```bash
+cd examples/smykowski
+npm install
+npm run build:lambda
+npm run deploy
+```
+
+See **[examples/smykowski/README.md](examples/smykowski/README.md)** for complete feature documentation and **[examples/smykowski/DEPLOYMENT.md](examples/smykowski/DEPLOYMENT.md)** for deployment guide.
 
 ## 📖 Usage Guide
 
@@ -196,29 +248,64 @@ schrute> memory off
 ```
 schrute/
 ├── src/
-│   ├── lib/                    # Core libraries
-│   │   ├── types/              # TypeScript types
-│   │   ├── email/              # Email parsing & threading
-│   │   ├── speech-acts/        # Speech act detection
-│   │   ├── privacy/            # Privacy filtering
-│   │   ├── query/              # Query handling
-│   │   ├── personality/        # Personality system
-│   │   ├── activation/         # Activation logic
-│   │   ├── memory/             # Memory management
-│   │   ├── claude/             # Claude API wrapper
-│   │   └── mcp/                # MCP client
-│   ├── mcp-servers/            # MCP server implementations
-│   │   ├── knowledge-store/    # Knowledge storage
-│   │   ├── dynamic-skills/     # Runtime skills
-│   │   └── mock-skills/        # Example servers
-│   └── cli/                    # Interactive CLI
-├── events/                     # Mock email YAML files
-├── personalities/              # Personality configs
-├── knowledge/                  # Knowledge store files
-└── skills/                     # Dynamic skills storage
+│   ├── lib/                       # Core libraries
+│   │   ├── types/                 # TypeScript types
+│   │   ├── email/                 # Email parsing & threading
+│   │   ├── speech-acts/           # Speech act detection
+│   │   ├── privacy/               # Privacy filtering
+│   │   ├── query/                 # Query handling
+│   │   ├── personality/           # Personality system
+│   │   ├── activation/            # Activation logic
+│   │   ├── memory/                # Memory management
+│   │   ├── claude/                # Claude API wrapper
+│   │   ├── storage/               # Storage abstraction (S3/DynamoDB)
+│   │   └── mcp/                   # MCP client
+│   ├── mcp-servers/               # MCP server implementations
+│   │   ├── knowledge-store/       # Knowledge storage
+│   │   ├── dynamic-skills/        # Runtime skills
+│   │   └── mock-skills/           # Example servers
+│   ├── lambdas/                   # AWS Lambda functions (Phase 2)
+│   │   ├── ingest/                # Email ingestion
+│   │   ├── processor/             # Speech act detection + activation
+│   │   └── responder/             # Response generation
+│   └── cli/                       # Interactive CLI
+├── examples/
+│   └── smykowski/                 # GitHub coordinator example (Phase 3)
+│       ├── src/                   # Smykowski source code
+│       ├── __tests__/             # Comprehensive test suite
+│       ├── template.yaml          # AWS SAM template
+│       └── README.md              # Feature documentation
+├── events/                        # Mock email YAML files
+├── personalities/                 # Personality configs
+├── knowledge/                     # Knowledge store files
+├── skills/                        # Dynamic skills storage
+├── template.yaml                  # AWS SAM template (Phase 2)
+├── ARCHITECTURE-PHASE2.md         # Phase 2 architecture docs
+└── DEPLOYMENT.md                  # Deployment guide
 ```
 
 ## 🏗️ Architecture
+
+### Deployment Modes
+
+**Local CLI (Phase 1):**
+- YAML email files for testing
+- In-memory storage
+- Interactive command-line interface
+- Perfect for development and experimentation
+
+**AWS Serverless (Phase 2):**
+```
+SES receives email → S3 (raw EML) → Ingest Lambda → DynamoDB + S3
+                                          ↓
+                                   Processor Lambda → Detect speech acts → Check activation
+                                          ↓
+                                   Responder Lambda → Generate response → Send via SES
+```
+- Automatic scaling with Lambda
+- Persistent storage (S3 + DynamoDB)
+- Real email integration via SES
+- See [ARCHITECTURE-PHASE2.md](ARCHITECTURE-PHASE2.md) for details
 
 ### Speech Act Detection
 
@@ -388,9 +475,25 @@ Sample email threads are provided in `events/` for testing:
 - `thread-technical-question.yaml` - Technical Q&A
 - `thread-mixed-participants.yaml` - Privacy test case
 
+## 📚 Documentation
+
+- **[CLAUDE.md](CLAUDE.md)** - Project context and development guidelines
+- **[ARCHITECTURE-PHASE2.md](ARCHITECTURE-PHASE2.md)** - Detailed AWS architecture
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Step-by-step deployment guide
+- **[TESTING.md](TESTING.md)** - Testing strategy and cost estimates
+- **[examples/smykowski/README.md](examples/smykowski/README.md)** - Smykowski feature documentation
+- **[examples/smykowski/ARCHITECTURE.md](examples/smykowski/ARCHITECTURE.md)** - Smykowski architecture
+- **[examples/smykowski/DEPLOYMENT.md](examples/smykowski/DEPLOYMENT.md)** - Smykowski deployment
+
 ## 🤝 Contributing
 
-This is an exploratory Phase 1 prototype. See `CLAUDE.md` for development guidelines.
+See `CLAUDE.md` for development guidelines and project context.
+
+**Development Modes:**
+- Local development: Use CLI with YAML mock emails
+- Production: Deploy to AWS with SAM
+- Testing: Comprehensive test suite (93 tests)
+- Extension: Build specialized assistants in `examples/` directory
 
 ## 📄 License
 
@@ -401,8 +504,9 @@ MIT License - See LICENSE file for details
 Built with:
 - [Anthropic Claude API](https://www.anthropic.com/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
+- AWS Serverless (Lambda, SES, S3, DynamoDB)
 - TypeScript, Node.js, and open source tools
 
 ---
 
-**Note:** Phase 1 is a local prototype. Phase 2 will add AWS deployment, real email integration (SES), and production features.
+**Project Status:** Production-ready framework with all three phases complete. Ready for local development, AWS deployment, and custom extensions.
