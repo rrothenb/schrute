@@ -191,6 +191,8 @@ export const SMYKOWSKI_TABLES = {
   METRICS: 'smykowski-metrics',
   CONFIG: 'smykowski-config',
   COORDINATION_LOG: 'smykowski-coordination-log',
+  PROCESSES: 'smykowski-processes',
+  ISSUE_METRICS: 'smykowski-issue-metrics',
 } as const
 
 // ============================================================================

@@ -100,6 +100,52 @@ Resources:
       SSESpecification:
         SSEEnabled: true
 
+  ProcessesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-processes'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: process_id
+          AttributeType: S
+        - AttributeName: repo_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: process_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: repo_id-index
+          KeySchema:
+            - AttributeName: repo_id
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+
+  IssueMetricsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-issue-metrics'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: issue_id
+          AttributeType: S
+        - AttributeName: repo_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: issue_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: repo_id-index
+          KeySchema:
+            - AttributeName: repo_id
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+
   # ============================================================================
   # Secrets Manager
   # ============================================================================
@@ -159,8 +205,11 @@ Resources:
         Variables:
           COMMITMENTS_TABLE: !Ref CommitmentsTable
           TEAM_STATE_TABLE: !Ref TeamStateTable
+          PROCESSES_TABLE: !Ref ProcessesTable
+          ISSUE_METRICS_TABLE: !Ref IssueMetricsTable
           GITHUB_TOKEN_SECRET: !Ref GitHubTokenSecret
           GITHUB_WEBHOOK_SECRET: !Ref GitHubWebhookSecretSecret
+          CLAUDE_API_KEY_SECRET: !Ref ClaudeAPIKeySecret
       Events:
         WebhookApi:
           Type: Api
@@ -172,6 +221,10 @@ Resources:
             TableName: !Ref CommitmentsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref TeamStateTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProcessesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref IssueMetricsTable
         - Statement:
             - Effect: Allow
               Action:
@@ -179,6 +232,7 @@ Resources:
               Resource:
                 - !Ref GitHubTokenSecret
                 - !Ref GitHubWebhookSecretSecret
+                - !Ref ClaudeAPIKeySecret
 
   SchedulerFunction:
     Type: AWS::Serverless::Function
@@ -210,6 +264,33 @@ Resources:
               Resource:
                 - !Ref GitHubTokenSecret
 
+  WikiMonitorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: lambdas/wiki-monitor/index.handler
+      Timeout: 180
+      Environment:
+        Variables:
+          PROCESSES_TABLE: !Ref ProcessesTable
+          GITHUB_TOKEN_SECRET: !Ref GitHubTokenSecret
+          CLAUDE_API_KEY_SECRET: !Ref ClaudeAPIKeySecret
+      Events:
+        ScheduledEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(15 minutes)
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProcessesTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - !Ref GitHubTokenSecret
+                - !Ref ClaudeAPIKeySecret
+
 Outputs:
   WebhookUrl:
     Description: GitHub Webhook URL
@@ -222,3 +303,11 @@ Outputs:
   TeamStateTableName:
     Description: Team State DynamoDB Table
     Value: !Ref TeamStateTable
+
+  ProcessesTableName:
+    Description: Processes DynamoDB Table
+    Value: !Ref ProcessesTable
+
+  IssueMetricsTableName:
+    Description: Issue Metrics DynamoDB Table
+    Value: !Ref IssueMetricsTable

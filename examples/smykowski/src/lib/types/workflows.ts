@@ -320,3 +320,105 @@ export const SmykowskiConfigSchema = z.object({
 })
 
 export type SmykowskiConfig = z.infer<typeof SmykowskiConfigSchema>
+
+// ============================================================================
+// Process Definition Types (Wiki-Driven Automation)
+// ============================================================================
+
+export const ProcessActionSchema = z.object({
+  type: z.enum(['comment', 'label', 'assign', 'create_issue', 'update_wiki', 'calculate_metrics']),
+  description: z.string(), // Natural language description
+  parameters: z.record(z.unknown()).optional(),
+})
+
+export type ProcessAction = z.infer<typeof ProcessActionSchema>
+
+export const ProcessDefinitionSchema = z.object({
+  process_id: z.string(),
+  enabled: z.boolean().default(true),
+  repo_id: z.string(), // owner/repo format
+  trigger: z.object({
+    event: z.string(), // e.g., "issues.opened", "pull_request.opened"
+    conditions: z.string().optional(), // Optional filter description
+  }),
+  actions: z.array(ProcessActionSchema),
+  configuration: z.record(z.unknown()).optional(),
+  source_wiki_page: z.string(),
+  last_updated: z.string().datetime(),
+})
+
+export type ProcessDefinition = z.infer<typeof ProcessDefinitionSchema>
+
+export const ProcessRecordSchema = ProcessDefinitionSchema.extend({
+  last_executed: z.string().datetime().optional(),
+  execution_count: z.number().default(0),
+  last_execution_status: z.enum(['success', 'failed', 'partial']).optional(),
+  last_execution_error: z.string().optional(),
+})
+
+export type ProcessRecord = z.infer<typeof ProcessRecordSchema>
+
+export interface ProcessExecutionResult {
+  process_id: string
+  execution_time: string
+  success: boolean
+  actions: Array<{
+    action_type: string
+    description: string
+    success: boolean
+    result?: string
+    error?: string
+  }>
+  error?: string
+}
+
+export interface ProcessExecutionContext {
+  event: any // GitHub webhook event
+  issue?: GitHubIssue
+  pull_request?: GitHubPullRequest
+  repo: string
+  triggered_at: string
+}
+
+// ============================================================================
+// Issue Metrics Types (Response Time Tracking)
+// ============================================================================
+
+export const IssueMetricSchema = z.object({
+  issue_id: z.string(), // Format: owner/repo#123
+  repo_id: z.string(),
+  issue_number: z.number(),
+  created_at: z.string().datetime(),
+  created_by: z.string(),
+  first_comment_at: z.string().datetime().optional(),
+  first_comment_by: z.string().optional(),
+  first_non_author_comment_at: z.string().datetime().optional(),
+  first_non_author_comment_by: z.string().optional(),
+  response_time_minutes: z.number().optional(), // Time to first non-author comment
+  closed_at: z.string().datetime().optional(),
+  resolution_time_minutes: z.number().optional(),
+  labels: z.array(z.string()).default([]),
+  updated_at: z.string().datetime(),
+})
+
+export type IssueMetric = z.infer<typeof IssueMetricSchema>
+
+export interface IssueResponseStats {
+  average_minutes: number
+  median_minutes: number
+  p90_minutes: number
+  p95_minutes: number
+  sample_size: number
+  period_start: string
+  period_end: string
+}
+
+export interface IssueResolutionStats {
+  average_hours: number
+  median_hours: number
+  total_closed: number
+  total_open: number
+  sample_size: number
+  period_start: string
+  period_end: string
+}
