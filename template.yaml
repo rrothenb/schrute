@@ -406,6 +406,166 @@ Resources:
       LogGroupName: !Sub '/aws/lambda/${ResponderFunction}'
       RetentionInDays: 30
 
+  # ============================================================================
+  # CloudWatch Alarms
+  # ============================================================================
+
+  # Lambda Error Rate Alarms
+  IngestErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-IngestErrors'
+      AlarmDescription: Alert when ingest function has high error rate
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref IngestFunction
+      TreatMissingData: notBreaching
+
+  ProcessorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-ProcessorErrors'
+      AlarmDescription: Alert when processor function has high error rate
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ProcessorFunction
+      TreatMissingData: notBreaching
+
+  ResponderErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-ResponderErrors'
+      AlarmDescription: Alert when responder function has high error rate
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ResponderFunction
+      TreatMissingData: notBreaching
+
+  # Lambda Duration Alarms (approaching timeout)
+  ProcessorDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-ProcessorDuration'
+      AlarmDescription: Alert when processor function duration approaches timeout
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 50000
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ProcessorFunction
+      TreatMissingData: notBreaching
+
+  ResponderDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-ResponderDuration'
+      AlarmDescription: Alert when responder function duration approaches timeout
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 100000
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ResponderFunction
+      TreatMissingData: notBreaching
+
+  # DynamoDB Throttling Alarms
+  ThreadsReadThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-ThreadsReadThrottle'
+      AlarmDescription: Alert when threads table read requests are throttled
+      MetricName: ReadThrottleEvents
+      Namespace: AWS/DynamoDB
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: TableName
+          Value: !Ref ThreadsTable
+      TreatMissingData: notBreaching
+
+  MessagesReadThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-MessagesReadThrottle'
+      AlarmDescription: Alert when messages table read requests are throttled
+      MetricName: ReadThrottleEvents
+      Namespace: AWS/DynamoDB
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: TableName
+          Value: !Ref MessagesTable
+      TreatMissingData: notBreaching
+
+  SpeechActsReadThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-SpeechActsReadThrottle'
+      AlarmDescription: Alert when speech-acts table read requests are throttled
+      MetricName: ReadThrottleEvents
+      Namespace: AWS/DynamoDB
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: TableName
+          Value: !Ref SpeechActsTable
+      TreatMissingData: notBreaching
+
+  MessagesWriteThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-MessagesWriteThrottle'
+      AlarmDescription: Alert when messages table write requests are throttled
+      MetricName: WriteThrottleEvents
+      Namespace: AWS/DynamoDB
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: TableName
+          Value: !Ref MessagesTable
+      TreatMissingData: notBreaching
+
 # ============================================================================
 # Outputs
 # ============================================================================

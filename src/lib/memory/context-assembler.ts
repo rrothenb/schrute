@@ -68,16 +68,43 @@ export class ContextAssembler {
     const recentMessages = sorted.slice(-windowSize)
     const olderMessages = sorted.slice(0, -windowSize)
 
-    // Rank older messages by relevance
-    // const rankedOlder = this.rankMessages(olderMessages, speechActs)
-    // TODO: Use rankedOlder for selective summarization
-
-    // For now, summarize ALL older messages together
-    // Future: could summarize in chunks or selectively based on relevance
+    // Rank older messages by relevance and summarize selectively
     const summaries: EmailSummary[] = []
     if (olderMessages.length > 0) {
-      const summary = await summarizeEmails(olderMessages, allMessages[0]?.thread_id || 'unknown')
-      summaries.push(summary)
+      const rankedOlder = this.rankMessages(olderMessages, speechActs)
+
+      // Separate high-relevance from low-relevance messages
+      // High relevance (score > 5): Messages with important speech acts
+      // Low relevance (score <= 5): Background messages
+      const highRelevance = rankedOlder.filter((rm) => rm.relevanceScore > 5)
+      const lowRelevance = rankedOlder.filter((rm) => rm.relevanceScore <= 5)
+
+      // Summarize high-relevance messages individually for better detail
+      if (highRelevance.length > 0) {
+        for (const ranked of highRelevance) {
+          const summary = await summarizeEmails(
+            [ranked.email],
+            allMessages[0]?.thread_id || 'unknown'
+          )
+          summaries.push({
+            ...summary,
+            summary: `[High relevance: ${ranked.reason}] ${summary.summary}`,
+          })
+        }
+      }
+
+      // Summarize low-relevance messages together for efficiency
+      if (lowRelevance.length > 0) {
+        const lowRelevanceEmails = lowRelevance.map((rm) => rm.email)
+        const summary = await summarizeEmails(
+          lowRelevanceEmails,
+          allMessages[0]?.thread_id || 'unknown'
+        )
+        summaries.push({
+          ...summary,
+          summary: `[${lowRelevance.length} background messages] ${summary.summary}`,
+        })
+      }
     }
 
     return {
@@ -90,10 +117,8 @@ export class ContextAssembler {
 
   /**
    * Rank messages by relevance for context inclusion
-   * TODO: Use this for selective summarization in the future
+   * Used for selective summarization to prioritize important messages
    */
-  // @ts-ignore - Will be used for selective summarization
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private rankMessages(messages: Email[], speechActs: SpeechAct[]): RankedMessage[] {
     const messageIdToSpeechActs = new Map<string, SpeechAct[]>()
 

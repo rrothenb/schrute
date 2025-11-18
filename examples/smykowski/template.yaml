@@ -291,6 +291,74 @@ Resources:
                 - !Ref GitHubTokenSecret
                 - !Ref ClaudeAPIKeySecret
 
+  PRReviewReminderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: lambdas/pr-review-reminder/index.handler
+      Timeout: 180
+      Environment:
+        Variables:
+          TEAM_STATE_TABLE: !Ref TeamStateTable
+          ISSUE_METRICS_TABLE: !Ref IssueMetricsTable
+          GITHUB_TOKEN_SECRET: !Ref GitHubTokenSecret
+          CLAUDE_API_KEY_SECRET: !Ref ClaudeAPIKeySecret
+      Events:
+        DailySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 9 ? * MON-FRI *)
+            Description: Check for stale PRs weekdays at 9am UTC
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TeamStateTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref IssueMetricsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - !Ref GitHubTokenSecret
+                - !Ref ClaudeAPIKeySecret
+
+  StatusReportFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: lambdas/status-report/index.handler
+      Timeout: 240
+      Environment:
+        Variables:
+          COMMITMENTS_TABLE: !Ref CommitmentsTable
+          TEAM_STATE_TABLE: !Ref TeamStateTable
+          METRICS_TABLE: !Ref MetricsTable
+          ISSUE_METRICS_TABLE: !Ref IssueMetricsTable
+          GITHUB_TOKEN_SECRET: !Ref GitHubTokenSecret
+          CLAUDE_API_KEY_SECRET: !Ref ClaudeAPIKeySecret
+      Events:
+        WeeklySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 10 ? * MON *)
+            Description: Generate weekly status report every Monday at 10am UTC
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CommitmentsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TeamStateTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MetricsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref IssueMetricsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - !Ref GitHubTokenSecret
+                - !Ref ClaudeAPIKeySecret
+
 Outputs:
   WebhookUrl:
     Description: GitHub Webhook URL

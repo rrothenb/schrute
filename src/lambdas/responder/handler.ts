@@ -11,7 +11,7 @@
  * 6. Store sent email in system
  */
 
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses'
+import { SESClient, SendRawEmailCommand } from '@aws-sdk/client-ses'
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager'
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3'
 import {
@@ -232,32 +232,47 @@ async function loadPersonality(name: string): Promise<string> {
 }
 
 /**
- * Send email via SES
+ * Send email via SES with proper threading headers
  */
 async function sendEmail(
   from: string,
   to: string,
   subject: string,
   body: string,
-  _inReplyTo?: string
+  inReplyTo?: string
 ): Promise<void> {
-  const command = new SendEmailCommand({
+  // Construct raw email with proper headers for threading
+  const messageId = `<${uuidv4()}@schrute.ai>`
+  const date = new Date().toUTCString()
+
+  // Build email headers
+  let rawMessage = `From: ${from}\r\n`
+  rawMessage += `To: ${to}\r\n`
+  rawMessage += `Subject: ${subject}\r\n`
+  rawMessage += `Date: ${date}\r\n`
+  rawMessage += `Message-ID: ${messageId}\r\n`
+  rawMessage += `MIME-Version: 1.0\r\n`
+  rawMessage += `Content-Type: text/plain; charset=UTF-8\r\n`
+  rawMessage += `Content-Transfer-Encoding: 7bit\r\n`
+
+  // Add threading headers if replying
+  if (inReplyTo) {
+    rawMessage += `In-Reply-To: ${inReplyTo}\r\n`
+    rawMessage += `References: ${inReplyTo}\r\n`
+  }
+
+  // Blank line separates headers from body
+  rawMessage += `\r\n`
+
+  // Add body
+  rawMessage += body
+
+  const command = new SendRawEmailCommand({
     Source: from,
-    Destination: {
-      ToAddresses: [to],
+    Destinations: [to],
+    RawMessage: {
+      Data: Buffer.from(rawMessage),
     },
-    Message: {
-      Subject: {
-        Data: subject,
-      },
-      Body: {
-        Text: {
-          Data: body,
-        },
-      },
-    },
-    // Note: SES doesn't directly support In-Reply-To header via SendEmailCommand
-    // Would need to use SendRawEmailCommand for full header control
   })
 
   await sesClient.send(command)

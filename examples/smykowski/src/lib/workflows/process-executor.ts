@@ -488,8 +488,10 @@ Write in a casual but professional tone. Be genuinely helpful without being over
 
       const discussionComment = `📝 I've created a wiki page to document this discussion: [${wikiTitle}](${wikiUrl})`
 
-      // We'd need to add discussion comment capability to GitHubService
-      // For now, just return success
+      // Add comment to discussion with link to wiki page
+      await this.github.discussions.addComment(discussion.id, discussionComment)
+
+      return `Created wiki page: ${wikiTitle} and posted link to discussion`
     }
 
     return `Created wiki page: ${wikiTitle}`
