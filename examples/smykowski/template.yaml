@@ -27,6 +27,18 @@ Parameters:
     Type: String
     Description: Team lead email for escalations
 
+  SlackBotToken:
+    Type: String
+    Description: Slack Bot User OAuth Token
+    NoEcho: true
+    Default: ''
+
+  SlackSigningSecret:
+    Type: String
+    Description: Slack App Signing Secret
+    NoEcho: true
+    Default: ''
+
 Globals:
   Function:
     Timeout: 120
@@ -146,6 +158,23 @@ Resources:
       SSESpecification:
         SSEEnabled: true
 
+  SlackEventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-slack-events'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: event_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: event_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+
   # ============================================================================
   # Secrets Manager
   # ============================================================================
@@ -167,6 +196,18 @@ Resources:
     Properties:
       Name: !Sub '${AWS::StackName}/claude-api-key'
       SecretString: !Ref ClaudeAPIKey
+
+  SlackBotTokenSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${AWS::StackName}/slack-bot-token'
+      SecretString: !Ref SlackBotToken
+
+  SlackSigningSecretSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${AWS::StackName}/slack-signing-secret'
+      SecretString: !Ref SlackSigningSecret
 
   # ============================================================================
   # Lambda Functions
@@ -359,10 +400,72 @@ Resources:
                 - !Ref GitHubTokenSecret
                 - !Ref ClaudeAPIKeySecret
 
+  SlackWebhookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: lambdas/slack-webhook/index.handler
+      Timeout: 30
+      Environment:
+        Variables:
+          SLACK_EVENTS_TABLE: !Ref SlackEventsTable
+          SLACK_SIGNING_SECRET: !Ref SlackSigningSecretSecret
+      Events:
+        WebhookApi:
+          Type: Api
+          Properties:
+            Path: /slack/events
+            Method: post
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SlackEventsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - !Ref SlackSigningSecretSecret
+
+  SlackProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: lambdas/slack-processor/index.handler
+      Timeout: 180
+      MemorySize: 1024
+      Environment:
+        Variables:
+          SLACK_EVENTS_TABLE: !Ref SlackEventsTable
+          SLACK_BOT_TOKEN_SECRET: !Ref SlackBotTokenSecret
+          GITHUB_TOKEN_SECRET: !Ref GitHubTokenSecret
+          CLAUDE_API_KEY_SECRET: !Ref ClaudeAPIKeySecret
+          GITHUB_REPOSITORY: !Ref GitHubRepository
+      Events:
+        ScheduledEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+            Description: Process Slack events every 5 minutes
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SlackEventsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - !Ref SlackBotTokenSecret
+                - !Ref GitHubTokenSecret
+                - !Ref ClaudeAPIKeySecret
+
 Outputs:
   WebhookUrl:
     Description: GitHub Webhook URL
     Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhook'
+
+  SlackWebhookUrl:
+    Description: Slack Events URL (configure in Slack app settings)
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/slack/events'
 
   CommitmentsTableName:
     Description: Commitments DynamoDB Table
@@ -379,3 +482,7 @@ Outputs:
   IssueMetricsTableName:
     Description: Issue Metrics DynamoDB Table
     Value: !Ref IssueMetricsTable
+
+  SlackEventsTableName:
+    Description: Slack Events DynamoDB Table
+    Value: !Ref SlackEventsTable
